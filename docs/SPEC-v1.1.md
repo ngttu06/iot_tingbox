@@ -51,7 +51,7 @@ HTTPS ngoài máy local. Bearer token admin và device riêng biệt, hash token
 
 ## Firmware / âm thanh
 
-- Bổ sung Wi-Fi provisioning qua SoftAP + DNS wildcard + HTTP portal bằng thư viện đi kèm core (WebServer/DNSServer/Preferences). SSID SmartPay theo chip, password ngẫu nhiên trên TFT; lưu credentials NVS sau kết nối thành công, fallback config.h. Cửa sổ boot/auto-recovery và giới hạn theo docs/WIFI_SETUP.md. Không hứa captive pop-up trên mọi điện thoại, không coi Wi-Fi connected là backend online.
+- Bổ sung Wi-Fi provisioning qua SoftAP + DNS wildcard + HTTP portal bằng thư viện đi kèm core (WebServer/DNSServer/Preferences). SSID `TingBox-XXXXXX` theo chip, password ngẫu nhiên trên TFT/USB Serial; giao diện tiếng Việt có dấu, quét mạng bất đồng bộ, nhập mạng ẩn, hiện/ẩn mật khẩu và tự cập nhật trạng thái. Lưu credentials NVS sau kết nối thành công, fallback config.h. Cửa sổ boot/auto-recovery và giới hạn theo docs/WIFI_SETUP.md. Không hứa captive pop-up trên mọi điện thoại, không coi Wi-Fi connected là backend online.
 
 - Giữ pin mapping v1.0, không nhầm ESP32-S3. Kiểm tra điện áp TFT và GPIO5 strapping trên module thật.
 - Task network core 0 xử lý HTTPS; loop core 1 duy trì decoder/UI. Không gọi HTTP blocking trong vòng decode audio.

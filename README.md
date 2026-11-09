@@ -36,9 +36,9 @@ Provider polling mặc định 30 giây, backoff khi lỗi. Chưa xác minh phâ
 
 ## Nạp ESP32
 
-**Có Wi-Fi setup portal:** ESP32 phát `SmartPay-XXXXXX`, mật khẩu ngẫu nhiên hiện trên TFT. Kết nối bằng điện thoại để mở trang nhập Wi-Fi; nếu không tự bật, truy cập `http://192.168.4.1/`. Lưu NVS sau khi kết nối thành công, không cần flash lại để đổi mạng. AP tự tắt sau 2 phút có Wi-Fi, mở lại khi mất Wi-Fi 30 giây. Chi tiết và giới hạn: `docs/WIFI_SETUP.md`.
+**Có Wi-Fi setup portal tiếng Việt:** ESP32 phát `TingBox-XXXXXX` (6 ký tự mã chip), mật khẩu ngẫu nhiên hiện trên TFT hoặc USB Serial. Kết nối bằng điện thoại để chọn Wi-Fi 2.4 GHz, nhập mật khẩu và xem trạng thái tự cập nhật; nếu không tự bật, truy cập `http://192.168.4.1/`. Có quét lại mạng, hiện/ẩn mật khẩu và nhập thủ công cho mạng ẩn. Giao diện hoạt động không cần Internet. Lưu NVS sau khi kết nối thành công, không cần flash lại để đổi mạng. AP tự tắt sau 2 phút có Wi-Fi, mở lại khi mất Wi-Fi 30 giây. Chi tiết và giới hạn: `docs/WIFI_SETUP.md`.
 
-Mục tiêu ESP32 DevKit V1/WROOM-32 flash ≥4 MB, TFT ILI9488 **SPI**, MAX98357A. Không dùng mapping này cho ESP32-S3 hoặc LCD parallel.
+Hỗ trợ ESP32 DevKit V1/WROOM-32 flash ≥4 MB và ESP32-S3 N16R8, TFT ILI9488 **SPI**, MAX98357A. Bảng dưới dành riêng cho WROOM; ESP32-S3 dùng bảng riêng bên dưới. Không dùng cho LCD parallel.
 
 | TFT | GPIO | I2S/MAX98357A | GPIO |
 |---|---|---|---|
@@ -50,6 +50,39 @@ Mục tiêu ESP32 DevKit V1/WROOM-32 flash ≥4 MB, TFT ILI9488 **SPI**, MAX9835
 | RST | 14 | Loa | SPK+/SPK-, không nối GND |
 
 Kiểm tra VCC/backlight TFT theo module thực; GPIO logic 3.3V, không đưa 5V vào GPIO. GPIO5 là chân strapping, kiểm tra khả năng boot khi đấu TFT. Touch chưa dùng.
+
+### ESP32-S3 N16R8 trên Windows
+
+Flash 16 MB QIO, PSRAM 8 MB OPI; nạp qua cổng USB-UART (CH343). Không dùng sơ đồ chân WROOM: GPIO22/23/25 không có trên S3, GPIO26/27 dành cho bộ nhớ.
+
+| TFT ILI9488 SPI | GPIO S3 | MAX98357A | GPIO S3 |
+|---|---|---|---|
+| SCK | 12 | BCLK | 4 |
+| MOSI / SDI | 11 | LRC / WS | 5 |
+| MISO / SDO | 13 | DIN | 6 |
+| CS | 10 | VIN | Theo module, thường 5V |
+| DC / RS | 9 | GND | GND chung |
+| RST | 14 | Loa | SPK+/SPK-, không nối GND |
+
+Kiểm tra điện áp VCC/LED của đúng module màn hình; không mặc định mọi module chịu được 5V. Đấu dây khi đã ngắt nguồn. Chưa hỗ trợ touch. Chưa có màn hình vẫn có thể đọc tên/mật khẩu AP qua Serial Monitor 115200 baud; mật khẩu AP đổi mỗi lần mở portal. Không chia sẻ log chứa mật khẩu.
+
+Từ PowerShell, với Arduino CLI trong PATH hoặc Arduino IDE cài tại vị trí mặc định trong LocalAppData:
+
+```powershell
+& 'C:\Users\info\Documents\iot_tingbox\tools\firmware.ps1' -Action setup
+& 'C:\Users\info\Documents\iot_tingbox\tools\firmware.ps1' -Action upload -Board esp32s3 -Port COM7
+```
+
+Script chọn đúng flash/PSRAM/partition và giữ USB Serial qua UART0 (không bật USB CDC). Build từng board ở thư mục riêng trong `firmware/build/`. Có thể dùng `-Board esp32` để giữ cấu hình WROOM cũ. Khi chưa có `config.h`, firmware dùng `config.example.h`: cài Wi-Fi được nhưng **chưa có backend/token/CA để nhận thanh toán**.
+
+### Kiểm tra Serial và loa không cần backend
+
+- Dùng cổng **USB-UART CH343**, Serial Monitor **115200 baud**; số COM có thể thay đổi khi đổi cổng/cáp USB. Firmware hiện không xuất console qua cổng USB native của S3 (`USB CDC On Boot: Disabled`).
+- Chỉ một chương trình được mở cổng COM tại một thời điểm. Nếu báo `Access denied`, đóng Serial Monitor/Plotter khác trước khi đọc hoặc nạp. Mở monitor rồi nhấn RESET/EN để xem log boot; firmware không tự lặp log khởi động.
+- Chọn kết thúc dòng Newline hoặc Both NL & CR. Gửi `help` để xem lệnh; `status` trả uptime/heap/trạng thái Wi-Fi, backend và audio, không in mật khẩu hay token.
+- Gửi `audio-test` để phát lại câu chào, không cần Wi-Fi/backend, không tạo giao dịch hoặc ACK. Lệnh bị từ chối khi đang phát, có thanh toán đang chờ/xử lý hoặc firmware đang ở trạng thái lỗi. Log `Audio started` và `Audio finished: OK` chỉ xác nhận luồng phần mềm, **không xác nhận loa thực sự phát tiếng**.
+- ESP32-S3: MAX98357A **BCLK → GPIO4, LRC/WS → GPIO5, DIN → GPIO6**, GND chung. Khi đã ngắt nguồn, kiểm tra đúng dây, nguồn VIN theo module và loa nối hai đầu SPK+/SPK- (không nối một đầu loa xuống GND). Nếu chân SD/EN bị kéo LOW thì ampli bị tắt; kiểm tra theo đúng module, không đưa 5V vào GPIO ESP32.
+- Nếu audio hoàn tất nhưng vẫn im: đo nguồn ampli, kiểm tra SD/EN, dây/loa và dạng sóng BCLK/LRC/DIN. Không đổi pin hoặc tăng gain để thay cho kiểm tra phần cứng.
 
 ### Arduino CLI (cách nạp tái lập được)
 

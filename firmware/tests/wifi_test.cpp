@@ -14,5 +14,9 @@ int main(){
   assert(!validWifiCredentials("shop",std::string("12345678\0",9)));
   assert(portalEscape("<script>\"'&")=="&lt;script&gt;&quot;&#39;&amp;");
   assert(portalEscape("Wi-Fi shop")=="Wi-Fi shop");
-  std::cout<<"12 Wi-Fi validation / HTML escaping cases passed\n";
+  assert(validWifiCredentials(u8"Cửa hàng TingBox","12345678"));
+  assert(!validWifiCredentials(std::string(30,'s')+u8"ệ","12345678"));
+  assert(portalEscape(u8"Cửa hàng <TingBox> & 'Wi-Fi'")==u8"Cửa hàng &lt;TingBox&gt; &amp; &#39;Wi-Fi&#39;");
+  assert(portalEscape("{{CSRF}}")=="{{CSRF}}"); // Literal SSID, never a template token.
+  std::cout<<"16 Wi-Fi validation / HTML escaping cases passed\n";
 }

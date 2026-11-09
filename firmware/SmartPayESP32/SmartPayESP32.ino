@@ -9,6 +9,7 @@
 #include "PaymentState.h"
 #include "WifiProvisioner.h"
 #include "StartupSounds.h"
+#include "SerialCommand.h"
 #if __has_include("config.h")
 #include "config.h"
 #else
@@ -24,6 +25,28 @@ PaymentEvent active{};
 bool activeEvent=false,wasPlaying=false,online=false;
 String shownOrder,shownPortal;
 unsigned long receivedAt=0;
+SerialCommand serialCommand;
+
+static void serviceSerial(){
+  // Limit work per loop so pasted input cannot starve the MP3 decoder.
+  for(unsigned n=0;n<64 && Serial.available();++n){
+    const char* command=serialCommand.feed((char)Serial.read());
+    if(!command)continue;
+    if(!strcmp(command,"status")){
+      Serial.printf("Status: uptime=%lus, heap=%lu, wifi=%s, backend=%s, audio=%s, last_audio=%s\n",
+        millis()/1000,(unsigned long)ESP.getFreeHeap(),WiFi.status()==WL_CONNECTED?"connected":"disconnected",
+        online?"online":"offline",audio.busy()?"playing":"idle",audio.succeeded()?"OK":"not completed");
+    }else if(!strcmp(command,"audio-test")){
+      // Never take over a payment or overwrite its playback result.
+      if(state==PaymentState::ERROR || activeEvent || audio.busy() || (!HARDWARE_SMOKE_TEST && uxQueueMessagesWaiting(eventQueue))){
+        Serial.println("Audio test rejected: busy, pending payment or error");
+      }else{
+        Serial.println("Audio test: welcome clip (no payment / no ACK)");
+        if(!audio.playClip("chao_mung"))Serial.println("Audio test failed to start");
+      }
+    }else Serial.println("Commands: status | audio-test | help (115200 baud, newline)");
+  }
+}
 
 static String eventNumber(uint64_t n){char b[24];snprintf(b,sizeof(b),"%llu",(unsigned long long)n);return b;}
 void networkTask(void*){
@@ -86,7 +109,10 @@ void networkTask(void*){
   }
 }
 void setup(){
-  Serial.begin(115200);display.begin();audio.begin();
+  Serial.begin(115200);
+  Serial.printf("SmartPay boot: %s, flash=%lu, PSRAM=%lu\n",ESP.getChipModel(),(unsigned long)ESP.getFlashChipSize(),(unsigned long)ESP.getPsramSize());
+  display.begin();audio.begin();
+  Serial.println("Commands: status | audio-test | help (115200 baud, newline)");
   if(HARDWARE_SMOKE_TEST){
     display.order("SMOKE",150000,"00020101021238540010A00000072701240006970422011000000000000208QRIBFTTA530370454061500005802VN62120808DH12345663049264");
     audio.playAmount(150000);return;
@@ -100,6 +126,7 @@ void setup(){
 }
 void loop(){
   audio.loop();
+  serviceSerial();
   if(HARDWARE_SMOKE_TEST){delay(1);return;}
   if(state==PaymentState::ERROR){delay(50);return;}
   NetworkUpdate u;
