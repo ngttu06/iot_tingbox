@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.sqlite*
+.tools/
+firmware/SmartPayESP32/config.h
+firmware/build/
+.DS_Store
+__pycache__/
+*.pyc

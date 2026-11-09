@@ -1,0 +1,6 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SmartPay POS</title><link rel="stylesheet" href="/style.css"></head>
+<body><main><h1>SmartPay · MBBank</h1><p id="mode"></p>
+<form id="order-form"><label>Admin token<input id="token" type="password" required autocomplete="off"></label><label>Thiết bị<input id="device" value="ESP32-001" required></label><label>Số tiền VND<input id="amount" type="number" min="1" max="999999999999" step="1" required></label><button>Tạo đơn</button></form>
+<p id="message" role="status"></p><section id="order" hidden><h2 id="order-id"></h2><p id="status"></p><img id="qr" alt="QR thanh toán"><button id="simulate" hidden>Giả lập nhận đủ tiền (MOCK)</button></section>
+<button id="refresh">Lịch sử / trạng thái đồng bộ</button><pre id="sync"></pre><section id="history"></section></main><script src="/app.js" defer></script></body></html>

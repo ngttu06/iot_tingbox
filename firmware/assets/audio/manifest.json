@@ -1,0 +1,156 @@
+{
+  "engine": "eSpeak NG",
+  "engine_version": "eSpeak NG text-to-speech: 1.52.0  Data at: /usr/local/Cellar/espeak-ng/1.52.0/share/espeak-ng-data",
+  "voice": "vi (Northern Vietnamese), synthetic male",
+  "rate": 145,
+  "format": "MP3 mono 22050 Hz 32 kbps",
+  "clips": [
+    {
+      "id": "da_nhan",
+      "text": "đã nhận",
+      "file": "da_nhan.mp3",
+      "bytes": 2211,
+      "sha256": "cb93e220a36d2a91a8486610dc29b00831fe7fe8dfca570c7a04e69943baf920"
+    },
+    {
+      "id": "khong",
+      "text": "không",
+      "file": "khong.mp3",
+      "bytes": 1793,
+      "sha256": "3e59555d7f6a63a59574c5209040815c2fb2935778a620ea364d789b900723de"
+    },
+    {
+      "id": "mot",
+      "text": "một",
+      "file": "mot.mp3",
+      "bytes": 1480,
+      "sha256": "636d66168d9b2664522ba751996d3f6099684c0e16f75f20e24b5b4d3930cc0f"
+    },
+    {
+      "id": "hai",
+      "text": "hai",
+      "file": "hai.mp3",
+      "bytes": 2002,
+      "sha256": "54393d0ac5e8f9717bb250fdc70dc77e4f7147e5481917ff0b013853572df8e6"
+    },
+    {
+      "id": "ba",
+      "text": "ba",
+      "file": "ba.mp3",
+      "bytes": 2211,
+      "sha256": "5edddea5c0873b7595341a5e47795b41eca96e057c8196474a35b2b56846f216"
+    },
+    {
+      "id": "bon",
+      "text": "bốn",
+      "file": "bon.mp3",
+      "bytes": 1898,
+      "sha256": "f680c0c28658287e3b839f4c586824db6915b044a631fe6785420c7b5209be3a"
+    },
+    {
+      "id": "nam",
+      "text": "năm",
+      "file": "nam.mp3",
+      "bytes": 1689,
+      "sha256": "fcf7cc8950d55018d862ca04b34a1c97492bfc1dacb6fda76d3608ff010b839e"
+    },
+    {
+      "id": "sau",
+      "text": "sáu",
+      "file": "sau.mp3",
+      "bytes": 1584,
+      "sha256": "aea8bb1f277ebba2a8dc5df67d8de342b8149ac87735bcfd02a8e305cd5f1b69"
+    },
+    {
+      "id": "bay",
+      "text": "bảy",
+      "file": "bay.mp3",
+      "bytes": 1584,
+      "sha256": "0bbdea686da99f778e84d23d86c682664ae066c1ca2b1d7a13f28f8d1be54ab3"
+    },
+    {
+      "id": "tam",
+      "text": "tám",
+      "file": "tam.mp3",
+      "bytes": 1689,
+      "sha256": "002373b3d35f7d7109fb67f3b7a218d176f3a569c66d413b87ee7d69ea6fe3dd"
+    },
+    {
+      "id": "chin",
+      "text": "chín",
+      "file": "chin.mp3",
+      "bytes": 1793,
+      "sha256": "443fe3e8f05bbb2b4ea643b90b8e21aadc4d230b4a4f207917e1b670079a5999"
+    },
+    {
+      "id": "muoi",
+      "text": "mười",
+      "file": "muoi.mp3",
+      "bytes": 2107,
+      "sha256": "a58adc77efdc2edf3e32c9f969630b07a927ad916b00858f9ff6f855a24f2639"
+    },
+    {
+      "id": "muoi_hang_chuc",
+      "text": "mươi",
+      "file": "muoi_hang_chuc.mp3",
+      "bytes": 2211,
+      "sha256": "5d40efa2f1e30766b5a3f06c181e57049dd08085d5e620034e20075b2f07d7b9"
+    },
+    {
+      "id": "tram",
+      "text": "trăm",
+      "file": "tram.mp3",
+      "bytes": 1689,
+      "sha256": "d0be27d73b30a57953c7212d5485fe2d34a9d900520d4e8dd4f96d4779870f1d"
+    },
+    {
+      "id": "nghin",
+      "text": "nghìn",
+      "file": "nghin.mp3",
+      "bytes": 1689,
+      "sha256": "7cfdb488e5a6b3ec852d5ccaa3a90b7eb8df25b3c84c725981f125d54eb5f08e"
+    },
+    {
+      "id": "trieu",
+      "text": "triệu",
+      "file": "trieu.mp3",
+      "bytes": 1584,
+      "sha256": "110aa661e787096f40e7273be1c54c9edf63fd61a1f490372f70a6c5d56b9511"
+    },
+    {
+      "id": "ty",
+      "text": "tỷ",
+      "file": "ty.mp3",
+      "bytes": 2107,
+      "sha256": "1bd0b7009b2125305fe220c23efad0172fc7d9dd31d35a7ae07729a2c9d6e9e7"
+    },
+    {
+      "id": "linh",
+      "text": "linh",
+      "file": "linh.mp3",
+      "bytes": 1898,
+      "sha256": "3ce185da45df6b3a5e315d0838081862efa9578825a04416cd41e2e372d75bf2"
+    },
+    {
+      "id": "mot_sau_muoi",
+      "text": "mốt",
+      "file": "mot_sau_muoi.mp3",
+      "bytes": 1480,
+      "sha256": "c8d494bd3e4d37df7ed101707051f82e1549dab16a1a7f48e80cad5d8b820953"
+    },
+    {
+      "id": "lam",
+      "text": "lăm",
+      "file": "lam.mp3",
+      "bytes": 1793,
+      "sha256": "7586e4828767a081472aa0526eb135f98dfe05a33a6e595ff5315e74a07de9fc"
+    },
+    {
+      "id": "dong",
+      "text": "đồng",
+      "file": "dong.mp3",
+      "bytes": 1584,
+      "sha256": "deb5afe75318f20b5895b56876a89741fa8986995503849c72f6a4a32bdb6433"
+    }
+  ]
+}
