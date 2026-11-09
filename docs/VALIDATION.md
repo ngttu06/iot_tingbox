@@ -9,6 +9,9 @@
 - Công cụ `C:\Users\info\Documents\iot_tingbox\tools\audio\prepare_dfplayer.py` tạo 24 file có hash hợp lệ tại `C:\Users\info\Documents\iot_tingbox\.tools\dfplayer-sd\mp3`, mapping cố định `0001`..`0024`; chế độ `--check` PASS. Không format hay ghi trực tiếp thẻ của người dùng.
 - ESP32-S3/core 3.3.12 compile/link **cả hai backend PASS**: DFPlayer app **1.131.643 byte (35%)**, RAM tĩnh **48.484 byte (14%)**; I2S app **1.319.295 byte (41%)**, RAM tĩnh **48.516 byte (14%)**. Log `trial-dfplayer-build.log` và `trial-i2s-build.log` tại `C:\Users\info\Documents\iot_tingbox\.tools`; stderr rỗng.
 - Hướng dẫn chân, thẻ, giới hạn clone và rollback tại `C:\Users\info\Documents\iot_tingbox\docs\DFPLAYER_TRIAL.md`. Người dùng đã xác nhận chuẩn bị thẻ/đổi dây trước nạp thử. Kết quả build/host không thay thế nghiệm thu phần cứng.
+- Đã nạp commit thử `3803622` qua COM7, esptool xác minh hash ghi PASS. App SHA-256 `F66BAC1DFA0538885811E76679517E507A362A6CA07581F72A313F98D0010B1E`. Lần đầu cổng bị Serial Monitor giữ; dừng riêng monitor rồi nạp lại thành công.
+- Chạy thật lần đầu và thử lại sau khi người dùng xác nhận vừa nối BUSY→GPIO6: câu chào `/mp3/0001.mp3`, Wi-Fi `/mp3/0002.mp3` và `audio-test` đều **FAILED: BUSY did not go LOW**. Không nhận frame phản hồi UART hợp lệ trong khoảng log; không suy ra chắc chắn module hỏng hay file thẻ sai. ESP32 không thấy panic trong khoảng quan sát, Wi-Fi connected/backend offline, heap 236.540 byte. **Chưa nghiệm thu audio DFPlayer**.
+- Log local đã che mật khẩu: `C:\Users\info\Documents\iot_tingbox\.tools\trial-dfplayer-live.log` và `C:\Users\info\Documents\iot_tingbox\.tools\trial-dfplayer-busy-retry.log`. Chưa rollback: người dùng yêu cầu giữ DFPlayer để thử lại sau khi nối BUSY; không nạp I2S khi đầu ra BUSY còn nối GPIO6 (I2S biến GPIO6 thành đầu ra). Cổng Serial được đóng sau thử.
 
 ## Chẩn đoán Serial và loa trên board
 
