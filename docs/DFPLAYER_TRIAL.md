@@ -29,12 +29,13 @@ python 'C:\Users\info\Documents\iot_tingbox\tools\audio\prepare_dfplayer.py'
 |---|---|---|
 | VCC | 5V ổn định theo thông số module | Tương tự |
 | GND | GND chung với ESP32 | Tương tự |
-| TX | GPIO4 (ESP RX) | GPIO26 |
-| RX | GPIO5 (ESP TX), qua điện trở nối tiếp 1 kΩ | GPIO25 qua 1 kΩ |
-| BUSY | GPIO6 | GPIO22 |
+| TX | GPIO16 (ESP RX) | GPIO26 |
+| RX | GPIO17 (ESP TX), qua điện trở nối tiếp 1 kΩ | GPIO25 qua 1 kΩ |
+| BUSY | GPIO18 | GPIO22 |
 | SPK1 / SPK2 | Hai đầu loa tương thích, ví dụ 4–8 Ω công suất phù hợp module | Tương tự |
 
 - Không nối SPK1/SPK2 xuống GND. Không nhầm DAC_L/DAC_R với đầu ra loa đã khuếch đại.
+- **Mapping S3 mới là RX16/TX17/BUSY18**, thay cho RX4/TX5/BUSY6 của commit `3803622`. Ngắt nguồn và chuyển đủ ba dây trước khi thử bản mới; dùng số GPIO in trên board, không đếm vị trí chân header. Màn hình, UART0 console, mapping WROOM và I2S dự phòng không đổi. Đổi chân không chứng minh module/thẻ/nguồn đã tốt.
 - Không cấp 5V vào GPIO. TX/BUSY của module nối vào ESP32 phải là logic không vượt 3.3V; kiểm tra đúng module/đo trước, dùng chuyển mức nếu khác. Điện trở 1k trên đường ESP TX không thay thế mạch chuyển mức 5V -> 3.3V.
 - BUSY là bắt buộc trong bản thử: active LOW khi phát. Ngõ vào ESP32 dùng pull-up nội 3.3V; không nối BUSY thẳng GND/5V.
 - Không đồng thời nối nguồn USB và nguồn 5V ngoài vào cùng đường VBUS nếu chưa biết mạch chống cấp ngược. Nguồn yếu có thể làm treo module dù ESP32 chưa reset.
