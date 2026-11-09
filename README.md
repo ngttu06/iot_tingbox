@@ -4,6 +4,8 @@ MVP một tài khoản/một thiết bị: web POS tạo QR, backend đồng b�
 
 Spec hiện hành: `docs/SPEC-v1.1.md`; kết quả kiểm thử: `docs/VALIDATION.md`. Spec gốc giữ để truy vết và có chú thích superseded.
 
+> **Bản thử audio hiện tại dùng MP3-TF-16P / DFPlayer qua UART + BUSY, không dùng I2S mặc định.** Cần thẻ microSD với 24 file đánh số, đổi dây và xác nhận module tương thích trước khi thử. Hướng dẫn tại `C:\Users\info\Documents\iot_tingbox\docs\DFPLAYER_TRIAL.md`. Các bảng MAX98357A bên dưới dành cho backend `-Audio i2s`; quay lại bằng build/nạp `-Audio i2s` hoặc revert commit thử. Mốc khôi phục: `c630daf`.
+
 ## Chạy backend mock
 
 Node.js 24 trở lên (dùng SQLite tích hợp, không cần native addon). Từ workspace hiện tại:
@@ -70,7 +72,7 @@ Từ PowerShell, với Arduino CLI trong PATH hoặc Arduino IDE cài tại vị
 
 ```powershell
 & 'C:\Users\info\Documents\iot_tingbox\tools\firmware.ps1' -Action setup
-& 'C:\Users\info\Documents\iot_tingbox\tools\firmware.ps1' -Action upload -Board esp32s3 -Port COM7
+& 'C:\Users\info\Documents\iot_tingbox\tools\firmware.ps1' -Action upload -Board esp32s3 -Audio i2s -Port COM7
 ```
 
 Script chọn đúng flash/PSRAM/partition và giữ USB Serial qua UART0 (không bật USB CDC). Build từng board ở thư mục riêng trong `firmware/build/`. Có thể dùng `-Board esp32` để giữ cấu hình WROOM cũ. Khi chưa có `config.h`, firmware dùng `config.example.h`: cài Wi-Fi được nhưng **chưa có backend/token/CA để nhận thanh toán**.

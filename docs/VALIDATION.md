@@ -1,5 +1,15 @@
 # Kết quả kiểm thử — 09/11/2026
 
+## Bản thử MP3-TF-16P / DFPlayer
+
+- Commit mốc MAX98357A/I2S: `c630dafb4b6210d990cd48671d7c1eeda7935b1a`. Đã sao lưu binary trước thử tại `C:\Users\info\Documents\iot_tingbox\.tools\rollback-max98357a`; không commit Flash hoặc secrets. Git chưa có identity, commit tác vụ dùng `Cline <cline@localhost>` qua `git -c`, không đổi cấu hình toàn cục.
+- Thêm backend UART1 9600 baud và BUSY active LOW (S3 RX4/TX5/BUSY6). Giữ backend I2S sau compile flag; script chọn `-Audio dfplayer` hoặc `-Audio i2s`, build ở các thư mục tách riêng. Không thêm dependency.
+- Chuỗi MP3 chỉ thành công sau từng chu kỳ BUSY LOW/HIGH có debounce; timeout không bắt đầu/kẹt LOW, BUSY LOW trước lệnh, lỗi module/SD removed/UART làm playback thất bại. Giao diện audio cũ giữ nguyên để payment chỉ ACK sau khi sequence hoàn tất và ghi NVS. Chưa thử giao dịch thật; BUSY không xác nhận đầu ra âm học hoặc nội dung thẻ.
+- Host DFPlayer test với `-Wall -Wextra -pedantic`: PASS cho frame/checksum, parser nhiễu/checksum sai, mapping, toàn bộ clip tiền mẫu, sequence, debounce, timeout, retry, lỗi module và tràn bộ đếm thời gian. Mapping chân S3/WROOM PASS. Audio 24 clip/hash/ffmpeg và các executable regression startup/sequence/money/serial: PASS.
+- Công cụ `C:\Users\info\Documents\iot_tingbox\tools\audio\prepare_dfplayer.py` tạo 24 file có hash hợp lệ tại `C:\Users\info\Documents\iot_tingbox\.tools\dfplayer-sd\mp3`, mapping cố định `0001`..`0024`; chế độ `--check` PASS. Không format hay ghi trực tiếp thẻ của người dùng.
+- ESP32-S3/core 3.3.12 compile/link **cả hai backend PASS**: DFPlayer app **1.131.643 byte (35%)**, RAM tĩnh **48.484 byte (14%)**; I2S app **1.319.295 byte (41%)**, RAM tĩnh **48.516 byte (14%)**. Log `trial-dfplayer-build.log` và `trial-i2s-build.log` tại `C:\Users\info\Documents\iot_tingbox\.tools`; stderr rỗng.
+- Hướng dẫn chân, thẻ, giới hạn clone và rollback tại `C:\Users\info\Documents\iot_tingbox\docs\DFPLAYER_TRIAL.md`. Người dùng đã xác nhận chuẩn bị thẻ/đổi dây trước nạp thử. Kết quả build/host không thay thế nghiệm thu phần cứng.
+
 ## Chẩn đoán Serial và loa trên board
 
 - Ban đầu Windows thấy COM8 (USB Serial Device), sau đó thiết bị hiện tại là **COM7, USB-Enhanced-SERIAL CH343**, VID 1A86/PID 55D3. Mở COM7 bị `Access denied`; sau khi dừng riêng tiến trình Arduino `serial-monitor`, mở cổng và đọc boot 115200 baud thành công. Không đóng Arduino IDE. Firmware dùng UART0, USB CDC on boot tắt; console không nằm trên USB native S3.

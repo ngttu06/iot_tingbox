@@ -2,6 +2,48 @@
 #include "AudioAssets.h"
 #include "VietnameseMoney.h"
 #include "HardwarePins.h"
+#if AUDIO_USE_DFPLAYER
+#include "DfPlayerTracks.h"
+
+void AudioManager::begin(){
+  pinMode(DFPLAYER_BUSY,INPUT_PULLUP);
+  uart.begin(9600,SERIAL_8N1,DFPLAYER_RX,DFPLAYER_TX);
+  player.begin(millis());
+  Serial.printf("Audio config: DFPlayer UART1 9600, ESP_RX=%d, ESP_TX=%d, BUSY=%d, volume=20/30\n",DFPLAYER_RX,DFPLAYER_TX,DFPLAYER_BUSY);
+}
+bool AudioManager::playAmount(uint64_t amount){return playSequence(buildPaymentAnnouncementClips(amount));}
+bool AudioManager::playClip(const char* id){return id && playSequence({id});}
+bool AudioManager::playSequence(const std::vector<std::string>& sequence){
+  if(player.busy() || sequence.empty())return false;
+  std::vector<uint16_t> tracks;
+  for(const auto& id:sequence){
+    const auto track=findDfPlayerTrack(id.c_str());
+    if(!track){Serial.printf("DFPlayer missing clip mapping: %s\n",id.c_str());return false;}
+    tracks.push_back(track);
+  }
+  if(!player.start(std::move(tracks)))return false;
+  Serial.printf("Audio queued: DFPlayer %s, clips=%u\n",sequence.front().c_str(),(unsigned)sequence.size());
+  return true;
+}
+void AudioManager::loop(){
+  const bool wasBusy=player.busy();
+  for(unsigned n=0;n<64 && uart.available();++n){
+    if(!parser.feed((uint8_t)uart.read()))continue;
+    Serial.printf("DFPlayer response: command=0x%02x, value=%u\n",parser.command,parser.argument);
+    if(parser.command==0x40 || (parser.command==0x3b && (parser.argument&2)))player.fail("module error or SD removed");
+  }
+  const auto command=player.tick(millis(),digitalRead(DFPLAYER_BUSY)==LOW);
+  if(command.code){
+    const auto frame=dfPlayerFrame(command.code,command.argument);
+    if(uart.write(frame.data(),frame.size())!=frame.size())player.fail("UART write failed");
+    if(command.code==0x12)Serial.printf("DFPlayer play: /mp3/%04u.mp3\n",command.argument);
+  }
+  if(wasBusy && !player.busy()){
+    if(player.succeeded())Serial.println("Audio finished: OK (DFPlayer BUSY cycle, not an acoustic measurement)");
+    else Serial.printf("Audio finished: FAILED (%s)\n",player.error()?player.error():"unknown");
+  }
+}
+#else
 
 void AudioManager::begin(){
   output.SetPinout(AUDIO_BCLK,AUDIO_LRC,AUDIO_DIN);output.SetGain(0.45);
@@ -45,3 +87,4 @@ void AudioManager::loop(){
   }else{completed=false;Serial.println("Audio failed: decoder not running");}
   playing=false;decoder.reset();source.reset();
 }
+#endif

@@ -1,9 +1,15 @@
 #pragma once
 #include <Arduino.h>
+#include "AudioBackend.h"
+#if AUDIO_USE_DFPLAYER
+#include "DfPlayerPlayback.h"
+#include "DfPlayerProtocol.h"
+#else
 #include "AudioFileSourceClipSequence.h"
 #include <AudioGeneratorMP3.h>
 #include <AudioOutputI2S.h>
 #include <memory>
+#endif
 #include <vector>
 #include <string>
 
@@ -13,12 +19,30 @@ class AudioManager {
   bool playAmount(uint64_t amount);
   bool playClip(const char* id);
   void loop();
-  bool busy() const { return playing; }
-  bool succeeded() const { return completed; }
+  bool busy() const {
+#if AUDIO_USE_DFPLAYER
+    return player.busy();
+#else
+    return playing;
+#endif
+  }
+  bool succeeded() const {
+#if AUDIO_USE_DFPLAYER
+    return player.succeeded();
+#else
+    return completed;
+#endif
+  }
  private:
   bool playSequence(const std::vector<std::string>& sequence);
+#if AUDIO_USE_DFPLAYER
+  HardwareSerial uart{1};
+  DfPlayerPlayback player;
+  DfPlayerParser parser;
+#else
   AudioOutputI2S output;
   std::unique_ptr<AudioFileSourceClipSequence> source;
   std::unique_ptr<AudioGeneratorMP3> decoder;
   bool playing=false,completed=false;
+#endif
 };

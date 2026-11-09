@@ -1,7 +1,8 @@
 param(
   [ValidateSet('setup','build','upload')][string]$Action = 'build',
   [ValidateSet('esp32','esp32s3')][string]$Board = 'esp32s3',
-  [string]$Port = 'COM7'
+  [string]$Port = 'COM7',
+  [ValidateSet('dfplayer','i2s')][string]$Audio = 'dfplayer'
 )
 $ErrorActionPreference = 'Stop'
 $Root = Split-Path -Parent $PSScriptRoot
@@ -24,12 +25,15 @@ if ($Action -eq 'setup') {
 $Fqbn = if ($Board -eq 'esp32s3') {
   'esp32:esp32:esp32s3:FlashSize=16M,PartitionScheme=app3M_fat9M_16MB,PSRAM=opi,FlashMode=qio,CDCOnBoot=default,UploadSpeed=921600'
 } else { 'esp32:esp32:esp32:PartitionScheme=huge_app' }
-$Build = Join-Path $Root "firmware\build\$Board"
+$Build = Join-Path $Root "firmware\build\$Board-$Audio"
 $Sketch = Join-Path $Root 'firmware\SmartPayESP32'
 python (Join-Path $Root 'tools\audio\embed.py')
 if ($LASTEXITCODE -ne 0) { throw 'Audio asset verification failed.' }
+python (Join-Path $Root 'tools\audio\prepare_dfplayer.py') --check
+if ($LASTEXITCODE -ne 0) { throw 'DFPlayer track mapping verification failed.' }
 $TftSetup = (Join-Path $Root 'firmware\tft\User_Setup.h').Replace('\','/')
-$Flags = "-DUSER_SETUP_LOADED -include `"$TftSetup`""
+$Backend = if ($Audio -eq 'dfplayer') { 1 } else { 0 }
+$Flags = "-DAUDIO_USE_DFPLAYER=$Backend -DUSER_SETUP_LOADED -include `"$TftSetup`""
 # Preserve the core's build.extra_flags (BOARD_HAS_PSRAM, USB mode, etc.).
 Invoke-Arduino compile --fqbn $Fqbn --build-path $Build --build-property "compiler.cpp.extra_flags=$Flags" --build-property "compiler.c.extra_flags=$Flags" $Sketch
 if ($Action -eq 'upload') {
