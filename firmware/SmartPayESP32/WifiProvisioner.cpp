@@ -1,6 +1,7 @@
 #include "WifiProvisioner.h"
 #include "WifiCredentials.h"
 #include "WifiPortal.h"
+#include "SpeakerLinkQr.h"
 #include <ArduinoJson.h>
 #include <WiFi.h>
 #include <esp_system.h>
@@ -19,8 +20,21 @@ void WifiProvisioner::begin(const char* defaultSsid,const char* defaultPassword)
   }
   if(savedSsid.isEmpty()){savedSsid=defaultSsid;savedPassword=defaultPassword;}
   WiFi.persistent(false);WiFi.setAutoReconnect(false);WiFi.mode(WIFI_AP_STA);
+  // Mains-powered speaker: prefer consistent HTTPS latency over modem sleep.
+  WiFi.setSleep(false);
   server.on("/",HTTP_GET,[this]{page();});
   server.on("/save",HTTP_POST,[this]{save();});
+  server.on("/bank",HTTP_POST,[this]{
+    if(!fromAp() || server.arg("csrf")!=csrf){replyError(403,"Phiên cài đặt không hợp lệ.");return;}
+    if(bankAction || connecting()){replyError(409,"Thiết bị đang xử lý. Vui lòng thử lại.");return;}
+    String action=server.arg("action");
+    if(action=="link")bankAction=1;
+    else if(action=="retry")bankAction=2;
+    else if(action=="scope" && server.arg("confirm")=="yes")bankAction=3;
+    else if(action=="review" && server.arg("confirm")=="yes")bankAction=5;
+    else{replyError(400,"Thao tác không hợp lệ.");return;}
+    connectedAt=millis();headers();server.send(200,"application/json","{\"ok\":true}");
+  });
   server.on("/status",HTTP_GET,[this]{sendStatus();});
   server.on("/scan",HTTP_GET,[this]{scan();});
   server.on("/scan",HTTP_POST,[this]{scan();});
@@ -41,7 +55,9 @@ void WifiProvisioner::open(){
   if(portalActive)return;
   WiFi.mode(WIFI_AP_STA);
   char suffix[9];snprintf(suffix,sizeof(suffix),"%06lx",(unsigned long)(ESP.getEfuseMac()&0xffffff));
-  apSsid=String("TingBox-")+suffix;apPassword=randomHex().substring(0,12);csrf=randomHex();
+  apSsid=String("TingBox-")+suffix;
+  apPassword=setupApPassword([]{return esp_random();}).c_str();
+  csrf=randomHex(); // CSRF remains a separate full-length random token.
   IPAddress ip(192,168,4,1);
   if(!WiFi.softAPConfig(ip,ip,IPAddress(255,255,255,0)) || !WiFi.softAP(apSsid.c_str(),apPassword.c_str(),1,false,2)){
     WiFi.softAPdisconnect(true);return;
@@ -76,6 +92,9 @@ void WifiProvisioner::page(int code,const String& formSsid){
   html.replace("{{STATUS}}",portalEscape(status.c_str()).c_str());
   html.replace("{{CSRF}}",csrf);
   html.replace("{{DISABLED}}",connecting()?"disabled":"");
+  const std::string svg=speakerLinkSvg(speakerKey.c_str());
+  html.replace("{{BANK_QR}}",svg.empty()?"<p>Mã liên kết chưa sẵn sàng. Hãy kiểm tra bộ nhớ thiết bị.</p>":svg.c_str());
+  html.replace("{{BANK_KEY}}",svg.empty()?"Chưa có mã":speakerKey);
   // User-controlled SSID must be substituted last, never interpreted as a template.
   const String& shown=code==400?formSsid:(connecting()?candidateSsid:savedSsid);
   html.replace("{{SSID}}",portalEscape(shown.c_str()).c_str());
@@ -84,6 +103,7 @@ void WifiProvisioner::page(int code,const String& formSsid){
 void WifiProvisioner::sendStatus(){
   if(!fromAp()){replyError(403,"Hãy kết nối với Wi-Fi của TingBox để cài đặt.");return;}
   headers();JsonDocument doc;doc["state"]=state;doc["message"]=status;
+  doc["gateway"]=gatewayStatus;
   String json;serializeJson(doc,json);server.send(200,"application/json; charset=utf-8",json);
 }
 void WifiProvisioner::scan(){
@@ -171,6 +191,8 @@ void WifiProvisioner::loop(){
   if(WiFi.status()==WL_CONNECTED){
     offlineAt=0;
     if(!connectedAt)connectedAt=now;
+    // Keep setup/QR available while a phone is connected to this protected AP.
+    if(portalActive && WiFi.softAPgetStationNum()>0)connectedAt=now;
     if(portalActive && !testing && !submitted && !scanning && now-connectedAt>=120000)close();
   }else{
     if(state=="success"){state="error";status="Wi-Fi đã lưu nhưng hiện bị mất kết nối. TingBox đang thử kết nối lại; hãy kiểm tra bộ phát Wi-Fi.";}

@@ -15,7 +15,7 @@ class SerialCommand {
     buffer[length++]=c;return nullptr;
   }
  private:
-  char buffer[32]{};
+  char buffer[192]{}; // bank-replay-amount <up to 128-byte event ID> <VND amount>
   size_t length=0;
   bool overflow=false;
 };

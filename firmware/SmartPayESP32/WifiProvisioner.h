@@ -17,6 +17,9 @@ class WifiProvisioner {
   bool connecting() const{return testing || submitted;}
   const String& ssid() const{return apSsid;}
   const String& password() const{return apPassword;}
+  void bankStatus(const String& value){gatewayStatus=value;}
+  void bankIdentity(const String& key){speakerKey=key;}
+  int takeBankAction(){int a=bankAction;bankAction=0;return a;}
  private:
   WebServer server{80};
   DNSServer dns;
@@ -24,6 +27,9 @@ class WifiProvisioner {
   String savedSsid,savedPassword,candidateSsid,candidatePassword;
   String apSsid,apPassword,csrf,status,state="idle",scanJson="{\"state\":\"idle\",\"networks\":[]}";
   bool portalActive=false,testing=false,submitted=false,scanning=false;
+  String gatewayStatus="Chưa kết nối gateway.";
+  String speakerKey;
+  int bankAction=0;
   unsigned long scanAt=0;
   unsigned long attemptAt=0,offlineAt=0,connectedAt=0,retryAt=0,submitAt=0;
   void page(int code=200,const String& formSsid="");

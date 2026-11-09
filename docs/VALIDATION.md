@@ -1,5 +1,191 @@
 # Kết quả kiểm thử — 09/11/2026
 
+## Khôi phục giao dịch dang dở và lỗi SD trên loa thật
+
+- Event `830784fa-d648-4c3b-ba85-4ca67f22afe4`, reference `FT26313429552072`:
+  trước đó API trả amount `2000`, VND, test false; lần kiểm tra sau trả HTTP 200
+  với `events: []`. Không suy diễn việc hàng đợi trống là đã phát thành công.
+- Người vận hành xác nhận chưa nghe và cho phép khôi phục đúng 2.000 đồng.
+  Thêm `bank-replay-amount <pending-id> <VND>`: chỉ bản ghi thật, chưa hoàn tất,
+  đúng ID và scope hiện tại; không ghi done trước khi audio hoàn tất. Quyền
+  khôi phục không tồn tại sau reset; lịch sử đã đọc được giữ nguyên.
+- Host tests PASS: speaker_recovery (parser, ID/ref/scope/test, failed writes),
+  serial_command (bounded/overflow), speaker_ledger, dfplayer, audio_sequence.
+- Build/nạp cuối ESP32-S3 DFPlayer thành công, source/header đã đối chiếu,
+  hash flash verified, không erase NVS. App 1.186.219 byte; RAM tĩnh 48.772 byte.
+  SHA-256: `E9592C1682853DEFE94474771D3A05255E5A389B3DC5A5140239FE54AF3FA2DB`.
+- Lần khôi phục 2.000 đồng: bắt đầu track 0003, gửi track 0004 rồi lỗi
+  `BUSY LOW before play`; không có playback persisted/ACK confirmed.
+- Bản cuối thêm tắt all-track repeat và log BUSY/timestamp, giữ nguyên kiểm tra
+  BUSY/SD; lệnh `audio-test-sequence` chỉ phát chào/Wi-Fi/chào, không có tiền/ACK.
+  Trên board, chuỗi thử 0001 -> 0002 gửi `0x3b, value=2` rồi `0x3a, value=2`:
+  theo thư viện DFRobot là SD removed/inserted. Audio FAILED, không ACK giao dịch.
+  Không kết luận cụ thể nguồn, thẻ, khe cắm hay module nếu chưa đo/kiểm tra vật lý.
+- Giao dịch vẫn cần khôi phục sau khi phần cứng ổn định. Không tự đánh dấu đã
+  nghe, không tự gửi lại lệnh tiền sau thử thất bại. Chưa nghiệm thu âm thanh thật.
+- Log: `C:\Users\info\Documents\iot_tingbox\.tools\local-recovery-live.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\busy-diagnostic-live.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\busy-diagnostic-flash.log`.
+
+## Chẩn đoán gateway transport `-1` (đã nạp lại COM7)
+
+- Thư viện core 3.3.12 có nhiều nhánh socket/connect trả `-1`; không đủ chứng
+  cứ quy lỗi này cho CA/chứng chỉ. Đã quan sát firmware trước tự ACK thành công
+  sau lỗi, trạng thái Serial trước build là online.
+- Thêm GatewaySecureClient: DNS riêng, giữ hostname/SNI/CA khi connect IP; log
+  RSSI/heap/elapsed/errno/TLS. Khi lỗi generic, thêm TCP probe tối đa 2 giây,
+  không gửi HTTP/key, không coi probe thành công là TLS thành công. Giữ retry
+  và dedup. Tắt modem sleep Wi-Fi để thử cải thiện ổn định (chưa xác minh tác dụng).
+- Host test `gateway_connect_test.cpp` PASS: DNS failure, virtual dispatch,
+  SNI/CA/timeout được giữ, TCP probe bounded, TLS fail-closed; ledger/DFPlayer PASS.
+- Build DFPlayer S3 exit 0: 1.182.287 byte (37%), RAM tĩnh 48.604 byte (14%).
+  Bản sao nguồn build đã kiểm tra khớp. App SHA-256:
+  `2A33697808C557468117757098032C47B52B19A799BE447BEA03B8133A0B1B19`.
+- Lần upload đầu thất bại do COM7 không tồn tại. Sau khi cắm lại, xác nhận
+  CH343 COM7 và nạp thành công: exit 0, hash verified, RTS reset, không erase NVS.
+  Binary SHA-256 giữ đúng giá trị trên; không build/nạp bản khác.
+- Theo dõi Serial 22 giây sau nạp: uptime 9s Wi-Fi connected/gateway offline;
+  gateway chuyển “Sẵn sàng nhận thông báo ngân hàng”; uptime 31s backend online,
+  audio idle/last_audio OK, heap 233.348 byte. Không thấy lỗi kết nối/panic trong
+  khoảng này. Chưa tái hiện lỗi `-1` với bản mới; không khẳng định đã hết lỗi
+  mạng hoàn toàn, chưa tạo thông báo thử hoặc giao dịch thật trong lần nạp này.
+- Log: `C:\Users\info\Documents\iot_tingbox\.tools\gateway-connect-build.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\gateway-connect-reupload.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\gateway-connect-reupload-live.log`.
+
+## Phát thử từ dashboard tới loa thật
+
+- Xác minh mã SPK trên COM7 khớp loa đã liên kết (chỉ đối chiếu hậu tố, không
+  ghi khóa vào log). Poll HTTPS 200; ban đầu có 5 event `test: true` chờ vì bản
+  cũ chủ động chặn test khi chưa có clip “Thông báo thử”.
+- Sửa test dùng clip câu chào có sẵn, TFT báo thử loa/không phải tiền thật;
+  không phát câu nhận tiền và không sửa tài khoản/liên kết ngân hàng. Giao dịch
+  thật vẫn đọc số tiền, dedup ID/reference và chờ kiểm tra khi reset dang dở.
+  Riêng test dang dở có thể tiếp tục câu chào sau reboot.
+- DFPlayer S3 build PASS: 1.177.127 byte (37%), RAM tĩnh 48.604 byte (14%). Nạp
+  COM7 exit 0, hash verified, không erase NVS. App SHA-256:
+  `45583B02CA260FFFC022D3FBAA5EB8EA44D3D7C4FD805DD2A88BC63E25F50BDF`.
+- Thực hiện nút Phát thử trên dashboard: log có `Gateway queued ... test=true`,
+  `/mp3/0001.mp3`, `Audio finished: OK`, `Gateway playback persisted`, rồi
+  `Gateway ACK confirmed`. Dashboard báo “Vừa kết nối”. Kiểm tra cuối API 200,
+  `ok: true`, hàng đợi **0 event**. Serial cuối: Wi-Fi connected, backend online,
+  audio idle, last_audio OK. Không đo âm thanh bằng microphone/nghe trực tiếp.
+- Đã gặp timeout/lỗi kết nối HTTPS; tăng connect/read timeout 10/15 giây,
+  handshake 12 giây, HTTP/1.0, giữ CA/hostname TLS. ACK lỗi đã tự retry thành
+  công, không phát lại ID đã lưu. Không khẳng định mạng hết lỗi hoàn toàn.
+- Host ledger test thêm test-ID retry, tách test/real reference và các lần bấm
+  test khác ID; PASS. DFPlayer, startup, Serial, Wi-Fi và pin S3/WROOM PASS.
+  Audio sequence/Flash assets PASS. Build I2S phụ đã hủy do thời gian biên dịch;
+  chưa xác nhận build I2S cho thay đổi lần này, không nạp I2S lên thiết bị.
+- Đã đăng xuất dashboard (xác minh về `/login`). Log an toàn tại
+  `C:\Users\info\Documents\iot_tingbox\.tools\gateway-final-live.log` và
+  `C:\Users\info\Documents\iot_tingbox\.tools\gateway-final-stability.log`.
+
+## Mật khẩu AP đúng 8 chữ số
+
+- Đổi riêng mật khẩu AP TingBox thành 8 chữ số ngẫu nhiên (0–9), giữ số 0 đầu.
+  Rejection sampling tránh modulo bias; CSRF vẫn 32 ký tự hex độc lập. Không đổi
+  mật khẩu router, SPK hoặc ledger. Mật khẩu mới được tạo mỗi lần mở AP.
+- Host test PASS: zero padding, biên RNG/rejection và 100.000 mật khẩu sinh ra
+  đúng 8 chữ số, cùng 16 kiểm tra Wi-Fi/escape. Portal browser regression và
+  ledger/startup PASS. Build S3 DFPlayer 1.175.603 byte (37%), RAM tĩnh 48.604 byte
+  (14%), stderr rỗng; bản sao nguồn build khớp.
+- Đã nạp COM7 không erase NVS, upload exit 0/hash verified. App SHA-256
+  `CD6CEB51DB5FAE6A59CE90C7AC4AD2149564A8AB20FE4B46A04ECD5ADBB733DB`.
+- Kiểm tra Serial trên board sau reset: **mật khẩu thực khớp `[0-9]{8}`**, đã che
+  khỏi log. Boot QR drawn, Wi-Fi connected, audio khởi động hoàn tất BUSY,
+  heap 235.472 byte, không panic trong 17 giây. Gateway vẫn offline; không thử bank.
+  Chưa thử nhập mật khẩu mới từ điện thoại thật. Log tại
+  `C:\Users\info\Documents\iot_tingbox\.tools\ap-8digits-build.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\ap-8digits-flash.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\ap-8digits-boot.log`.
+
+## QR tự hiện khi boot và trong trang Wi-Fi
+
+- Đã sửa và nạp lại DFPlayer qua COM7, giữ NVS/mã SPK. App SHA-256
+  `D4076CDBBA12CE15E6F780BAF10F0D5372FD1DB672DA2B14A30D92DE95B067BE`;
+  upload exit 0, hash dữ liệu ghi verified, reset RTS. Build app 1.175.647 byte
+  (37%), RAM tĩnh 48.604 byte (14%), stderr rỗng.
+- TFT tự nhận QR ngay trước lần gọi HTTPS đầu tiên, hiện tối đa 2 phút, kèm
+  AP/password và địa chỉ portal. QR startup không chặn poll/ACK. Nút hiện lại QR
+  vẫn có; portal giữ mở khi có client AP. Không xóa/sinh lại SPK khi nạp.
+- Theo yêu cầu mới, QR SVG offline và SPK có trong HTML trang Wi-Fi **AP-only**,
+  không cần JS/CDN/dịch vụ QR ngoài. Có cảnh báo mã là API credential; no-store,
+  không trả SPK qua status/log hay interface STA. Điều này thay thế hạn chế
+  “không trả SPK qua HTML” của bản trước.
+- Host QR SVG/TFT + Chromium screenshot 375px và no-JS: OpenCV giải mã đúng SPK
+  mẫu. Browser regression PASS: 5 kích thước không overflow, CSP, bank actions,
+  no-JS QR, Wi-Fi forms. Đã xem ảnh 375px. Host ledger/startup/DFPlayer/Wi-Fi PASS.
+- Boot capture 18 giây trên board có `automatic startup QR ready` và
+  `startup/requested QR drawn on TFT`, không panic. Wi-Fi connected, heap 235.472,
+  audio idle/last_audio OK; hai câu chào/Wi-Fi hoàn tất BUSY. Đây xác minh đường
+  phần mềm, chưa nhìn/quét TFT thật hoặc tải portal từ điện thoại thật.
+- Gateway vẫn offline; chưa xác minh key đã được đăng ký hoặc giao dịch thật.
+  Chưa build lại I2S cho riêng bản QR này. Log:
+  `C:\Users\info\Documents\iot_tingbox\.tools\bank-qr-startup-final.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\bank-qr-startup-flash.log`,
+  `C:\Users\info\Documents\iot_tingbox\.tools\bank-qr-startup-boot.log` (đã che secrets).
+
+## Nạp firmware speaker gateway xuống board
+
+- Đã nạp bản **DFPlayer ESP32-S3** qua **COM7**, app SHA-256
+  `724426F37E3FD9A12FF5BB41451EA681959BFE5F5453276EBB46123F43A48E20`.
+  Arduino CLI/esptool exit 0; app 1.170.960 byte, hash ghi verified; reset RTS.
+  Không erase toàn bộ Flash/NVS, không thay mapping RX16/TX17/BUSY18.
+- Đã dừng riêng Arduino serial-monitor giữ cổng, không đóng IDE. Boot capture
+  18 giây sau reset: ESP32-S3, Flash 16 MB, PSRAM 8 MB; Wi-Fi connected,
+  heap 235.456 byte, audio idle/last_audio OK, không thấy panic/backtrace.
+- **DFPlayer lần này có phản hồi UART và BUSY hoàn tất** cho cả `/mp3/0001.mp3`
+  (chào) và `/mp3/0002.mp3` (Wi-Fi). Đây là kết quả mới, khác các lần lỗi BUSY
+  lịch sử bên dưới; chưa xác nhận nghe đúng âm thanh hoặc nội dung thẻ.
+- Status backend/gateway offline trong quan sát. Chưa quét SPK thật/đăng ký
+  liên kết, chưa kiểm tra poll 200/ACK hoặc giao dịch thật, chưa cắt nguồn thử NVS.
+  Không kết luận offline là 403 vì Serial status không hiển thị mã lỗi gateway.
+- Log upload: `C:\Users\info\Documents\iot_tingbox\.tools\speaker-gateway-flash.log`;
+  boot đã che mật khẩu AP và mã SPK:
+  `C:\Users\info\Documents\iot_tingbox\.tools\speaker-gateway-flash-boot.log`.
+  Các mục “chưa nạp” trong kết quả build dưới đây mô tả trạng thái trước lần nạp này.
+
+## Speaker gateway, mã SPK và chống đọc trùng
+
+- Firmware chuyển từ `/v1/device/*` sang GET/POST `/api/speaker-gateway`, header
+  `x-speaker-key`. UUID v4 tạo một lần bằng hardware RNG sau bật Wi-Fi, lưu NVS;
+  QR chứa nguyên SPK chỉ hiện trên TFT theo thao tác portal/Serial. Không có key
+  chung hardcode, không trả SPK trong HTML/JS/status hoặc log thông thường.
+- Ledger lưu intent trước phát và hoàn tất sau audio; ACK sau ghi hoàn tất.
+  Chống lặp event ID và reference trong phạm vi liên kết, lưu alias ID trước ACK.
+  Kho 128 ID không tự evict; đầy/lỗi dừng. Reset dang dở cần người dùng kiểm tra/
+  thông báo thủ công và xác nhận, không tự phát lại/ACK.
+- Host ledger test `-Wall -Wextra -pedantic`: PASS cho lỗi ghi, reboot intent/
+  completion, lost ACK, event/reference lặp, alias qua đổi scope, phân biệt test,
+  reference rỗng, kho đầy, tiền decimal chính xác/không float.
+- Host QR với đúng version 4/ECC_MEDIUM/quiet zone 4 và OpenCV decode: PASS,
+  giải mã đúng toàn bộ SPK mẫu. QR vendor có cảnh báo pragma/VLA khi biên dịch
+  `.c` bằng host g++; không thay đổi mã vendor.
+- Chrome headless: PASS cho link/retry/scope/review, CSRF payload và checkbox
+  xác nhận; regression Wi-Fi/CSP/SSID injection/form/status/retry/no-JS,
+  5 kích thước không tràn ngang. Đã xem screenshot 375px.
+- Money 100.000 range cases, DFPlayer protocol/playback, Wi-Fi 16 cases, serial,
+  audio sequence/startup, mapping chân WROOM/S3: PASS. Audio 24 MP3/hash: PASS.
+- Build cuối ESP32-S3/core 3.3.12: **DFPlayer 1.170.819 byte (37%), RAM tĩnh
+  48.604 byte (14%); I2S 1.358.315 byte (43%), RAM tĩnh 48.644 byte (14%)**.
+  Cả hai PASS, stderr rỗng. Log tại
+  `C:\Users\info\Documents\iot_tingbox\.tools\speaker-gateway-dfplayer-verified.log`
+  và `C:\Users\info\Documents\iot_tingbox\.tools\speaker-gateway-i2s-verified.log`.
+- TLS từ máy phát triển với **chỉ CA GTS Root R4 nhúng** + hostname verification:
+  PASS. CA byte-for-byte khớp bản chính thức Google PKI. GET không gửi key trả
+  403; không gửi ACK/mã thật, không tạo giao dịch hoặc thay đổi hệ thống bank.
+- `git diff --check`, JS syntax, final source sanity và bản sao header trong
+  build: PASS. Không thêm thư viện runtime/framework.
+- **Chưa nạp board**, chưa có SPK thực được sinh trên board, chưa thử tài khoản
+  đã liên kết/poll 200/ACK production. Chưa cắt điện thử NVS, nghe audio hay quét
+  màn TFT thật. DFPlayer vẫn có lỗi BUSY trong các lần thử phần cứng trước đó.
+  Host tests không thay thế nghiệm thu này. Chưa build đầy đủ WROOM trong lượt này.
+- **Chưa hỗ trợ phát/ACK `test: true`** vì thiếu clip “Thông báo thử”; không đọc
+  như tiền thật. Chỉ hỗ trợ VND nguyên dương đến 999.999.999.999. API thiếu
+  account/link generation nên đổi scope thủ công. Các giới hạn và quy trình:
+  `C:\Users\info\Documents\iot_tingbox\docs\SPEAKER_GATEWAY.md`.
+
 ## Bản thử MP3-TF-16P / DFPlayer
 
 - **Mapping S3 hiện tại (commit `ef2c9da`): ESP RX=GPIO16, ESP TX=GPIO17, BUSY=GPIO18**, thay nhóm 4/5/6 lịch sử bên dưới. Chân TFT, I2S dự phòng và WROOM không đổi. Host pin tests S3/WROOM bổ sung kiểm tra không trùng TFT, chân riêng biệt và tránh USB/bộ nhớ/console/strapping S3: PASS; DFPlayer protocol/playback tests và 24 track/hash check PASS.

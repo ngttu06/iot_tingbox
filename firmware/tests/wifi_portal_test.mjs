@@ -11,19 +11,27 @@ const root=fileURLToPath(new URL('../../',import.meta.url));
 const source=readFileSync(path.join(root,'firmware/SmartPayESP32/WifiPortal.h'),'utf8');
 const blocks=[...source.matchAll(/R"PORTAL\(([\s\S]*?)\)PORTAL"/g)].map(m=>m[1]);
 assert.equal(blocks.length,2);
-const html=blocks[0].replaceAll('{{AP}}','TingBox-04291c').replaceAll('{{STATE}}','idle')
+const bankSvg=readFileSync(path.join(root,'.tools/speaker-link.svg'),'utf8');
+const sampleKey='SPK-b8fb059c-d258-4926-b51a-bd6e7d90120f';
+const html=blocks[0].replaceAll('{{BANK_QR}}',bankSvg).replaceAll('{{BANK_KEY}}',sampleKey).replaceAll('{{AP}}','TingBox-04291c').replaceAll('{{STATE}}','idle')
   .replaceAll('{{STATUS}}','Chọn mạng Wi-Fi 2.4 GHz và nhập mật khẩu để bắt đầu.')
   .replaceAll('{{CSRF}}','test-token').replaceAll('{{DISABLED}}','').replaceAll('{{SSID}}','');
 const malicious='<img src=x onerror=alert(1)>';
 let state='idle',status='Chọn Wi-Fi để bắt đầu.',saved,scanEmpty=false,scanFails=false;
 let scanPending=true;
+const bankRequests=[];
 const server=createServer(async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   res.setHeader('Content-Security-Policy',"default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'unsafe-inline'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'");
   if(req.url==='/'){res.setHeader('Content-Type','text/html; charset=utf-8');res.end(html);return;}
   if(req.url==='/portal.js'){res.setHeader('Content-Type','application/javascript');res.end(blocks[1]);return;}
   res.setHeader('Content-Type','application/json; charset=utf-8');
-  if(req.url==='/status'){res.end(JSON.stringify({state,message:status}));return;}
+  if(req.url==='/status'){res.end(JSON.stringify({state,message:status,gateway:'Gateway test status'}));return;}
+  if(req.url==='/bank'){
+    let body='';for await(const chunk of req)body+=chunk;
+    bankRequests.push(Object.fromEntries(new URLSearchParams(body)));
+    res.end('{"ok":true}');return;
+  }
   if(req.url==='/scan'){
     if(scanFails){res.end(JSON.stringify({state:'error',networks:[]}));return;}
     if(scanPending){scanPending=false;res.end(JSON.stringify({state:'scanning',networks:[]}));return;}
@@ -68,6 +76,23 @@ try{
   await cdp('Emulation.setDeviceMetricsOverride',{width:375,height:812,deviceScaleFactor:1,mobile:true});
   await cdp('Page.navigate',{url});
   await until("document.getElementById('scan-message')?.textContent.includes('Đang tìm')");
+  await until("document.getElementById('bank-status').textContent==='Gateway test status'");
+  await evaluate("document.getElementById('bank-link').click()");
+  await until("document.getElementById('bank-status').textContent.includes('Xem QR')");
+  assert.equal(bankRequests.at(-1).action,'link');assert.equal(bankRequests.at(-1).csrf,'test-token');
+  await evaluate("document.getElementById('bank-retry').click()");
+  await until("!document.getElementById('bank-retry').disabled");
+  assert.equal(bankRequests.at(-1).action,'retry');
+  const count=bankRequests.length;
+  await evaluate("document.getElementById('bank-scope').click();document.getElementById('bank-review').click()");
+  assert.equal(bankRequests.length,count,'Dangerous actions require explicit attestation');
+  await evaluate("document.getElementById('bank-confirm').checked=true;document.getElementById('bank-scope').click()");
+  await until("!document.getElementById('bank-scope').disabled");
+  assert.equal(bankRequests.at(-1).action,'scope');assert.equal(bankRequests.at(-1).confirm,'yes');
+  await evaluate("document.getElementById('bank-reviewed').checked=true;document.getElementById('bank-review').click()");
+  await until("!document.getElementById('bank-review').disabled");
+  assert.equal(bankRequests.at(-1).action,'review');assert.equal(bankRequests.at(-1).confirm,'yes');
+  await check(`document.getElementById('bank-key').textContent===${JSON.stringify(sampleKey)} && document.getElementById('bank-qr').getBoundingClientRect().width>100`);
   await check("document.getElementById('connect').disabled");
   await until("document.querySelectorAll('.network').length===2");
   await check("document.documentElement.lang==='vi' && document.title.includes('TingBox')");
@@ -124,8 +149,11 @@ try{
   await cdp('Emulation.setScriptExecutionDisabled',{value:true});await cdp('Page.navigate',{url});
   await until("document.readyState==='complete'");
   await check("!document.getElementById('ssid').disabled && document.getElementById('scan').hidden && document.querySelector('noscript').textContent.includes('JavaScript')");
+  await check(`document.getElementById('bank-key').textContent===${JSON.stringify(sampleKey)} && document.getElementById('bank-qr').getBoundingClientRect().width>100`);
+  const qrShot=await cdp('Page.captureScreenshot',{format:'png',captureBeyondViewport:true});
+  writeFileSync(path.join(output,'bank-qr-nojs.png'),Buffer.from(qrShot.data,'base64'));
   assert.deepEqual(errors,[],'No JS or CSP errors');
-  console.log('PASS: Vietnamese portal, CSP, SSID injection, selection, validation, password toggle, open/hidden networks, submit/status/error/retry/success, pending/empty/failed scan, 5 responsive sizes, input focus/font-size and pinch-zoom guards, reduced motion, no-JS fallback.');
+  console.log('PASS: bank link/retry/scope/review actions, CSRF and confirmations; Vietnamese portal, CSP, SSID injection, selection, validation, password toggle, open/hidden networks, submit/status/error/retry/success, pending/empty/failed scan, 5 responsive sizes, input focus/font-size and pinch-zoom guards, reduced motion, no-JS fallback.');
   console.log(`Screenshots: ${output}`);
   await send('Browser.close');
 }finally{if(ws)ws.close();browser.kill();server.closeAllConnections();server.close();}

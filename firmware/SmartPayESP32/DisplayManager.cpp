@@ -60,3 +60,16 @@ void DisplayManager::credit(bool paid,uint64_t amount,const String& content,cons
   if(paid){tft.drawLine(425,25,437,38,TFT_DARKGREEN);tft.drawLine(437,38,465,10,TFT_DARKGREEN);}
   tft.drawString("+"+money(amount),12,50,4);wrapped(bank+" "+at,90,2);wrapped("Noi dung: "+content,135,8);
 }
+bool DisplayManager::bankLink(const String& key,const String& apSsid,const String& apPassword){
+  QRCode qr;std::vector<uint8_t> data(qrcode_getBufferSize(4));
+  if(qrcode_initText(&qr,data.data(),4,ECC_MEDIUM,key.c_str())!=0)return false;
+  tft.fillScreen(TFT_WHITE);tft.setTextColor(TFT_NAVY,TFT_WHITE);
+  tft.drawCentreString("LIEN KET NGAN HANG",tft.width()/2,4,4);
+  int scale=220/(qr.size+8),left=(tft.width()-(qr.size+8)*scale)/2;
+  for(int y=0;y<qr.size;++y)for(int x=0;x<qr.size;++x)if(qrcode_getModule(&qr,x,y))
+    tft.fillRect(left+(x+4)*scale,36+(y+4)*scale,scale,scale,TFT_BLACK);
+  tft.drawCentreString(key,tft.width()/2,250,2);
+  tft.drawCentreString(apSsid.length()?"Wi-Fi: "+apSsid+" / "+apPassword:"Admin quet ma de lien ket. Khong chia se ma.",tft.width()/2,274,2);
+  tft.drawCentreString("QR cung co tai 192.168.4.1 khi noi Wi-Fi loa",tft.width()/2,296,2);
+  return true;
+}

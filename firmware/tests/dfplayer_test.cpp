@@ -11,9 +11,10 @@ static uint32_t ready(DfPlayerPlayback& p,uint32_t now=0){
   assert(p.tick(now+2500,false).code==0x09);
   assert(p.tick(now+2750,false).code==0x06);
   assert(p.tick(now+2900,false).code==0x19);
-  assert(p.tick(now+3050,false).code==0x16);
-  assert(!p.tick(now+3300,false).code);
-  return now+3300;
+  const auto loopAll=p.tick(now+3050,false);assert(loopAll.code==0x11 && loopAll.argument==0);
+  assert(p.tick(now+3200,false).code==0x16);
+  assert(!p.tick(now+3450,false).code);
+  return now+3450;
 }
 static void finish(DfPlayerPlayback& p,uint32_t now){
   p.tick(now+10,true);p.tick(now+30,true); // LOW stable

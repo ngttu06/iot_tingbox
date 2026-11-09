@@ -1,5 +1,18 @@
 #pragma once
+#include <cstdint>
 #include <string>
+
+// Eight decimal digits, including leading zeroes. Rejection sampling avoids
+// modulo bias; the device supplies esp_random(), tests supply deterministic RNG.
+template<typename Random>
+inline std::string setupApPassword(Random random){
+  uint32_t value;
+  do{value=random();}while(value>=4200000000U);
+  value%=100000000U;
+  std::string password(8,'0');
+  for(int i=7;i>=0;--i){password[i]=char('0'+value%10);value/=10;}
+  return password;
+}
 
 inline bool validWifiCredentials(const std::string& ssid,const std::string& password){
   if(ssid.empty() || ssid.size()>32 || ssid.find('\0')!=std::string::npos || password.find('\0')!=std::string::npos)return false;

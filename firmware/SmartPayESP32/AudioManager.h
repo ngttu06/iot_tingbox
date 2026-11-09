@@ -17,7 +17,9 @@ class AudioManager {
  public:
   void begin();
   bool playAmount(uint64_t amount);
+  bool playNotification(uint64_t amount,bool test);
   bool playClip(const char* id);
+  bool playDiagnosticSequence(){return playSequence({"chao_mung","ket_noi_wifi","chao_mung"});}
   void loop();
   bool busy() const {
 #if AUDIO_USE_DFPLAYER
@@ -39,6 +41,7 @@ class AudioManager {
   HardwareSerial uart{1};
   DfPlayerPlayback player;
   DfPlayerParser parser;
+  int lastBusyLevel=-1;
 #else
   AudioOutputI2S output;
   std::unique_ptr<AudioFileSourceClipSequence> source;

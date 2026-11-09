@@ -14,11 +14,26 @@ static const char WIFI_PORTAL_HTML[] PROGMEM = R"PORTAL(<!doctype html>
    Do not disable pinch zoom in the viewport: users can still enlarge the page manually. */
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 #ssid,#password{font-size:18px;font-size:max(18px,1rem);line-height:1.5}
+.bank-code{text-align:center;margin:18px 0}.bank-code svg{display:block;max-width:100%;height:auto;margin:0 auto 12px;background:white}.bank-code code{display:block;overflow-wrap:anywhere;font-size:14px;font-weight:700;user-select:all}.bank-actions{display:grid;gap:10px;margin:16px 0}#bank-heading{color:var(--primary)}
 </style><script src="/portal.js" defer></script></head>
 <body><main>
 <header><div class="brand"><svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><rect x="3" y="3" width="26" height="26" rx="8"/><path d="M8 13a12 12 0 0 1 16 0M11 17a7 7 0 0 1 10 0M14 21a3 3 0 0 1 4 0"/><path d="M16 24h.01"/></svg>TingBox</div><div class="tag">Kết nối thật đơn giản</div>
 <h1>Cài đặt Wi-Fi</h1><p class="intro">Chọn Wi-Fi tại nhà hoặc cửa hàng để TingBox kết nối.</p><div class="device">Thiết bị: <strong id="ap-name">{{AP}}</strong></div></header>
 <section id="status" class="status" data-state="{{STATE}}" role="status" aria-live="polite" aria-atomic="true"><strong id="status-title">Trạng thái thiết bị</strong><p id="status-message">{{STATUS}}</p></section>
+<section class="card" aria-labelledby="bank-heading"><h2 id="bank-heading">Liên kết ngân hàng</h2>
+<p class="hint">QR hiện sẵn khi mở trang, không cần bấm nút. Admin quét QR hoặc sao chép mã SPK bên dưới để liên kết ngân hàng.</p>
+<div class="bank-code">{{BANK_QR}}<code id="bank-key">{{BANK_KEY}}</code></div>
+<p class="hint">Mã này cố định và cũng là khóa API. Chỉ chia sẻ với admin liên kết, không đăng ảnh QR công khai.</p>
+<p id="bank-status" role="status" aria-live="polite">Đang kiểm tra gateway…</p>
+<div class="bank-actions"><button type="button" id="bank-link">Hiện lại QR trên màn hình loa</button>
+<button type="button" id="bank-retry">Đã liên kết / Kiểm tra lại</button></div>
+<details><summary>Đổi tài khoản hoặc phiên liên kết</summary><p class="hint">Chỉ thực hiện sau khi admin đã đổi liên kết và hàng đợi cũ được xóa trên server. Không xóa lịch sử ID đã phát.</p>
+<label><input type="checkbox" id="bank-confirm"> Tôi xác nhận đã đổi liên kết trên hệ thống bank.</label>
+<button type="button" id="bank-scope">Xác nhận phạm vi liên kết mới</button></details>
+<details><summary>Khôi phục sau mất điện/lỗi âm thanh</summary><p class="hint">Chỉ dùng khi loa báo giao dịch dang dở sau reset. Kiểm tra và thông báo giao dịch đó thủ công trước; xác nhận này cho phép ACK, không phát lại.</p>
+<label><input type="checkbox" id="bank-reviewed"> Tôi đã kiểm tra và thông báo giao dịch dang dở thủ công.</label>
+<button type="button" id="bank-review">Xác nhận đã xử lý thủ công</button></details>
+<noscript>QR và mã SPK vẫn dùng được khi tắt JavaScript. Bật JavaScript nếu muốn gửi thao tác kiểm tra lại tới loa.</noscript></section>
 <form id="wifi-form" method="post" action="/save"><input type="hidden" name="csrf" value="{{CSRF}}">
 <fieldset id="fields" {{DISABLED}}><div class="card">
 <div class="heading"><h2><span class="step">1</span>Chọn mạng Wi-Fi</h2><button type="button" class="text-button" id="scan" hidden>Quét lại</button></div>
@@ -48,7 +63,7 @@ static const char WIFI_PORTAL_JS[] PROGMEM = R"PORTAL('use strict';
     const controller=new AbortController(), timer=setTimeout(()=>controller.abort(),15000);
     try{const r=await fetch(url,{...options,signal:controller.signal,cache:'no-store'});if(!r.ok)throw new Error(await r.text());return await r.json();}finally{clearTimeout(timer);}
   }
-  function applyStatus(data){busy=data.state==='connecting';lastSuccess=data.state==='success';message(data.state,data.message);controls();}
+  function applyStatus(data){busy=data.state==='connecting';lastSuccess=data.state==='success';message(data.state,data.message);if(data.gateway)$('bank-status').textContent=data.gateway;controls();}
   async function poll(){
     try{const data=await request('/status');if(!submitting)applyStatus(data);}catch(e){
       message(lastSuccess?'success':'error',lastSuccess?'Wi-Fi đã được lưu. Nếu trang cài đặt đã đóng, hãy chuyển điện thoại về Wi-Fi thường dùng.':'Không liên lạc được với TingBox. Hãy giữ hoặc kết nối lại mạng '+$('ap-name').textContent+' rồi tải lại trạng thái.');
@@ -78,6 +93,22 @@ static const char WIFI_PORTAL_JS[] PROGMEM = R"PORTAL('use strict';
     if(busy||scanning||submitting)return;scanning=true;controls();clearTimeout(scanTimer);$('scan-message').textContent='Đang tìm Wi-Fi gần đây…';
     try{scanResult(await request('/scan',{method:'POST',body:new URLSearchParams({csrf})}));}catch(e){scanFailed();}
   }
+  async function bankAction(action){
+    if(action==='scope' && !$('bank-confirm').checked){$('bank-status').textContent='Hãy xác nhận đã đổi liên kết trước.';return;}
+    if(action==='review' && !$('bank-reviewed').checked){$('bank-status').textContent='Hãy kiểm tra và thông báo thủ công trước khi xác nhận.';return;}
+    const buttons=['bank-link','bank-retry','bank-scope','bank-review'];buttons.forEach(id=>$(id).disabled=true);
+    try{
+      await request('/bank',{method:'POST',body:new URLSearchParams({csrf,action,confirm:action==='scope'||action==='review'?'yes':''})});
+      $('bank-status').textContent=action==='link'?'Xem QR trên màn hình loa (tối đa 2 phút).':'Đã gửi yêu cầu. Chờ trạng thái gateway cập nhật.';
+      $('bank-confirm').checked=false;
+      $('bank-reviewed').checked=false;
+    }catch(e){$('bank-status').textContent=e.message||'Không gửi được yêu cầu.';}
+    finally{buttons.forEach(id=>$(id).disabled=false);}
+  }
+  $('bank-link').addEventListener('click',()=>bankAction('link'));
+  $('bank-retry').addEventListener('click',()=>bankAction('retry'));
+  $('bank-scope').addEventListener('click',()=>bankAction('scope'));
+  $('bank-review').addEventListener('click',()=>bankAction('review'));
   $('scan').addEventListener('click',scan);
   $('manual').addEventListener('click',()=>{document.querySelectorAll('.network').forEach(b=>b.setAttribute('aria-pressed','false'));openNetwork(false);ssid.focus();ssid.select();});
   $('show-password').addEventListener('click',()=>{const show=password.type==='password';password.type=show?'text':'password';$('show-password').textContent=show?'Ẩn':'Hiện';$('show-password').setAttribute('aria-pressed',String(show));});

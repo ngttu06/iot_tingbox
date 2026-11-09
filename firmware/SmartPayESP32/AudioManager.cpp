@@ -2,6 +2,11 @@
 #include "AudioAssets.h"
 #include "VietnameseMoney.h"
 #include "HardwarePins.h"
+// Safe fallback with existing SD/Flash assets: test the speaker using a welcome
+// phrase, NEVER claim receipt of the test amount as real money.
+bool AudioManager::playNotification(uint64_t amount,bool test){
+  return test?playClip("chao_mung"):playAmount(amount);
+}
 #if AUDIO_USE_DFPLAYER
 #include "DfPlayerTracks.h"
 
@@ -32,11 +37,16 @@ void AudioManager::loop(){
     Serial.printf("DFPlayer response: command=0x%02x, value=%u\n",parser.command,parser.argument);
     if(parser.command==0x40 || (parser.command==0x3b && (parser.argument&2)))player.fail("module error or SD removed");
   }
-  const auto command=player.tick(millis(),digitalRead(DFPLAYER_BUSY)==LOW);
+  const int busyLevel=digitalRead(DFPLAYER_BUSY);
+  if(player.busy() && busyLevel!=lastBusyLevel){
+    Serial.printf("DFPlayer BUSY: t=%lums, level=%s\n",millis(),busyLevel==LOW?"LOW":"HIGH");
+  }
+  lastBusyLevel=busyLevel;
+  const auto command=player.tick(millis(),busyLevel==LOW);
   if(command.code){
     const auto frame=dfPlayerFrame(command.code,command.argument);
     if(uart.write(frame.data(),frame.size())!=frame.size())player.fail("UART write failed");
-    if(command.code==0x12)Serial.printf("DFPlayer play: /mp3/%04u.mp3\n",command.argument);
+    if(command.code==0x12)Serial.printf("DFPlayer play: /mp3/%04u.mp3, t=%lums\n",command.argument,millis());
   }
   if(wasBusy && !player.busy()){
     if(player.succeeded())Serial.println("Audio finished: OK (DFPlayer BUSY cycle, not an acoustic measurement)");

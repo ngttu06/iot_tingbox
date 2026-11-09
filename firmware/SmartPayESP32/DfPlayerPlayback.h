@@ -38,6 +38,9 @@ class DfPlayerPlayback {
         phase=Phase::LOOP;since=now;return {0x19,1}; // single-track repeat off
       case Phase::LOOP:
         if(uint32_t(now-since)<150)return {};
+        phase=Phase::LOOP_ALL;since=now;return {0x11,0}; // explicitly disable all-track repeat
+      case Phase::LOOP_ALL:
+        if(uint32_t(now-since)<150)return {};
         phase=Phase::SETTLE;since=now;return {0x16,0}; // stop boot/autoplay
       case Phase::SETTLE:
         if(uint32_t(now-since)<250)return {};
@@ -74,7 +77,7 @@ class DfPlayerPlayback {
   bool succeeded() const{return completed;}
   const char* error() const{return failure;}
  private:
-  enum class Phase {RESET,BOOT,DEVICE,VOLUME,LOOP,SETTLE,READY,START,END,GAP};
+  enum class Phase {RESET,BOOT,DEVICE,VOLUME,LOOP,LOOP_ALL,SETTLE,READY,START,END,GAP};
   Phase phase=Phase::RESET;
   uint32_t since=0,edgeAt=0;
   bool running=false,completed=false,stopPending=false,edge=false;

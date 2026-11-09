@@ -7,6 +7,7 @@ class DisplayManager {
   void begin();
   void message(const String& title,const String& detail="");
   bool order(const String& id,uint64_t amount,const String& payload);
+  bool bankLink(const String& key,const String& apSsid="",const String& apPassword="");
   void credit(bool paid,uint64_t amount,const String& content,const String& bank,const String& at);
  private:
   TFT_eSPI tft;

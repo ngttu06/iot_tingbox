@@ -56,6 +56,11 @@ Mở Serial Monitor 115200, Newline, nhấn RESET/EN. Module có khoảng khởi
 - `BUSY did not go LOW`: kiểm tra thẻ/tên file, TX->RX qua 1k, GND, nguồn và BUSY; không nối tắt BUSY để vượt kiểm tra.
 - `BUSY stayed LOW` hoặc `BUSY LOW before play`: kiểm tra chập/nhầm chân, module treo, file hoặc chế độ phát lặp.
 - UART `command=0x40` là lỗi module; mã cụ thể phụ thuộc chip/clone. Không tự coi phản hồi ACK/finish là thanh toán đã đọc.
+- `audio-test-sequence` phát chào/Wi-Fi/chào không liên quan giao dịch, không ACK.
+  Bản chẩn đoán log cạnh BUSY/timestamp và tắt cả single/all-track repeat.
+  Đã gặp `0x3b, value=2` (SD removed) rồi `0x3a, value=2` (SD inserted) khi
+  chuyển clip trên board thật; giữ lỗi fail-closed. Ngắt nguồn trước khi kiểm tra
+  thẻ/khe cắm/dây/nguồn; không bỏ qua tín hiệu lỗi để xác nhận thanh toán.
 
 Checklist trước online: nghe đúng câu chào, câu Wi-Fi, đọc đúng 10.000/150.000/số nhiều nhóm; kiểm tra thiếu file/mất thẻ/BUSY ngắt không ACK; reset giữa câu; payment đến lúc chào; không phát lặp khi Wi-Fi reconnect. Hiện chưa xác nhận phần cứng DFPlayer, chưa chứng nhận production.
 

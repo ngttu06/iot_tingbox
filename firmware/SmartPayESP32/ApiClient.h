@@ -4,8 +4,11 @@
 
 class ApiClient {
  public:
-  bool get(const String& path,JsonDocument& response);
-  bool ack(uint64_t event);
+  enum class Result { Ok,Retry,Forbidden,Invalid };
+  explicit ApiClient(const String& key):speakerKey(key){}
+  Result poll(JsonDocument& response);
+  Result ack(const char* id);
  private:
-  bool request(const String& path,JsonDocument* response,const String& body="");
+  String speakerKey;
+  Result request(JsonDocument& response,const String& body="");
 };

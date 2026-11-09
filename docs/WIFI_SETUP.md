@@ -3,7 +3,7 @@
 ## Cách sử dụng
 
 1. Bật ESP32. Thiết bị mở mạng **TingBox-XXXXXX** trong giai đoạn cài đặt; sáu ký tự cuối lấy từ mã chip (ví dụ `TingBox-04291c`).
-2. Xem SSID và mật khẩu ngẫu nhiên 12 ký tự trên màn TFT, kết nối điện thoại vào mạng đó. Mật khẩu đổi mỗi lần portal được mở lại/khởi động lại.
+2. Xem SSID và mật khẩu ngẫu nhiên **đúng 8 chữ số (0–9)** trên màn TFT, kết nối điện thoại vào mạng đó. Có thể có số 0 ở đầu; nhập đủ cả 8 số. Mật khẩu đổi mỗi lần portal được mở lại/khởi động lại. Chỉ mật khẩu AP của loa đổi định dạng; không đổi mật khẩu router, mã SPK hoặc CSRF token.
 3. Điện thoại có thể hiện thông báo đăng nhập mạng; chạm để mở trang cấu hình. Nếu không tự bật, mở trình duyệt tại **http://192.168.4.1/**. Chọn giữ kết nối khi điện thoại báo mạng không có Internet; có thể cần tạm tắt chuyển mạng thông minh/VPN/private DNS.
 4. Chọn Wi-Fi **2.4 GHz** trong danh sách hoặc bấm **Nhập tên mạng thủ công** (dùng được với mạng ẩn). **Quét lại** để tìm mạng; mức sóng và trạng thái có/không có mật khẩu hiện ngay trên từng mạng. Nhập mật khẩu, dùng **Hiện / Ẩn** nếu cần, rồi bấm **Kết nối và lưu**. Mạng mở được phép để mật khẩu trống. SSID tối đa 32 byte; mật khẩu WPA 8–63 ký tự ASCII in được; WPA enterprise/PSK hex 64 ký tự không hỗ trợ.
 5. Chờ tối đa 30 giây; trạng thái tự cập nhật. Khi kết nối thành công, cấu hình được lưu NVS để dùng sau reboot. Nếu kết nối hoặc lưu NVS thất bại, giữ cấu hình cũ. Nếu điện thoại bị ngắt, kết nối lại `TingBox-XXXXXX` và mở lại địa chỉ trên. Trình duyệt tắt JavaScript vẫn nhập/gửi được form; dùng **Tải lại trạng thái** để xem kết quả.

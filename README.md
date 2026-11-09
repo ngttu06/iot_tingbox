@@ -1,4 +1,14 @@
-# SmartPay ESP32 — ThueAPI MBBank + VietQR
+# TingBox ESP32 — Speaker gateway
+
+> **Nguồn thông báo firmware hiện tại:** `https://tingbox.ngttu.com/api/speaker-gateway`.
+> Mã SPK UUID được sinh một lần/lưu NVS; QR tự hiện trên TFT khi boot và có sẵn
+> trong trang Wi-Fi cục bộ, kể cả khi tắt JavaScript. Chống lặp theo event ID và mã giao dịch bank `reference`,
+> chỉ ACK sau phát thành công + lưu bền vững. Hướng dẫn, khôi phục mất điện,
+> giới hạn 128 ID và event thử dùng câu chào (không xác nhận tiền thật):
+> [C:\Users\info\Documents\iot_tingbox\docs\SPEAKER_GATEWAY.md](docs/SPEAKER_GATEWAY.md).
+> Các mục backend MBBank/POS bên dưới mô tả hệ thống cũ; firmware mới không gọi
+> các endpoint `/v1/device/*` nữa. Đã nạp bản gateway DFPlayer xuống ESP32-S3 qua
+> COM7 ngày 09/11/2026; boot/Wi-Fi/audio BUSY hoàn tất, chưa thử bank thật.
 
 MVP một tài khoản/một thiết bị: web POS tạo QR, backend đồng bộ lịch sử MBBank, ESP32 hiển thị và đọc số tiền tiếng Việt. **Bộ 24 MP3 đã có trong project và nhúng vào app Flash: upload sketch có luôn audio, không chép filesystem riêng, không gen audio trên ESP32.**
 
