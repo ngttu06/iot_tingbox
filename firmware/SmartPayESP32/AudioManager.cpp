@@ -5,24 +5,30 @@
 void AudioManager::begin(){output.SetPinout(26,25,22);output.SetGain(0.45);}
 bool AudioManager::playAmount(uint64_t amount){
   if(playing)return false;
-  sequence=numberToVietnameseClips(amount);
+  completed=false;
+  const auto sequence=buildPaymentAnnouncementClips(amount);
   if(sequence.empty())return false;
-  sequence.insert(sequence.begin(),"da_nhan");sequence.emplace_back("dong");
-  for(const auto& id:sequence)if(!findAudioClip(id.c_str()))return false;
-  position=0;playing=true;completed=false;next();return playing;
-}
-void AudioManager::next(){
+  std::vector<const AudioClip*> clips;
+  for(const auto& id:sequence){
+    const auto* clip=findAudioClip(id.c_str());
+    if(!clip)return false;
+    clips.push_back(clip);
+  }
   decoder.reset();source.reset();
-  if(position>=sequence.size()){playing=false;completed=true;return;}
-  const AudioClip* clip=findAudioClip(sequence[position++].c_str());
-  if(!clip){playing=false;completed=false;return;}
-  source.reset(new AudioFileSourcePROGMEM(clip->data,clip->size));
+  source.reset(new AudioFileSourceClipSequence(std::move(clips)));
   decoder.reset(new AudioGeneratorMP3());
-  if(!decoder->begin(source.get(),&output)){playing=false;completed=false;}
+  if(!decoder->begin(source.get(),&output)){
+    decoder.reset();source.reset();return false;
+  }
+  playing=true;return true;
 }
 void AudioManager::loop(){
   if(!playing)return;
   if(decoder && decoder->isRunning()){
-    if(!decoder->loop()){decoder->stop();next();}
-  }else{playing=false;completed=false;}
+    if(decoder->loop())return;
+    // Normal EOF leaves the decoder running; internal fatal errors stop it.
+    completed=decoder->isRunning() && source->getPos()==source->getSize();
+    decoder->stop();
+  }else completed=false;
+  playing=false;decoder.reset();source.reset();
 }

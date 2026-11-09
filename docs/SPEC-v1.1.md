@@ -57,8 +57,9 @@ HTTPS ngoài máy local. Bearer token admin và device riêng biệt, hash token
 - Task network core 0 xử lý HTTPS; loop core 1 duy trì decoder/UI. Không gọi HTTP blocking trong vòng decode audio.
 - Một event in-flight, NVS lưu sau phát thành công, sau đó ACK; không ACK trước khi phát.
 - Không cam kết exactly-once khi cắt nguồn giữa playback và ghi NVS. Xóa NVS có thể phát lại event chưa ACK.
-- Bộ 21 MP3 thực trong firmware/assets/audio; bao gồm 0–10, mươi, trăm/nghìn/triệu/tỷ/đồng, mốt/lăm/linh, đã nhận.
-- Giọng eSpeak NG tiếng Việt miền Bắc, tổng hợp máy, không phải giọng thu phòng thu. Có script tái tạo, manifest SHA-256, mã PROGMEM tạo sẵn.
+- Bộ 22 MP3 thực (43.780 byte) trong firmware/assets/audio; chữ số, mười/mươi, trăm/nghìn/triệu/tỷ, mốt/lăm/linh, cảm ơn, đã nhận được, Việt Nam đồng.
+- Giọng Linh vi_VN tạo trên Mac, không tạo trên ESP32. Có script tái tạo, manifest SHA-256, mã PROGMEM tạo sẵn. Quyền phân phối giọng hệ thống chưa được xác minh.
+- Câu đọc: “Cảm ơn, đã nhận được <số tiền> Việt Nam đồng”. Ghép luồng MP3 trực tiếp từ Flash, một decoder mỗi câu, không tải audio mạng, không giữ cả câu trong RAM.
 - Audio nằm trong app Flash, không phải ROM bất biến, không cần LittleFS/microSD/upload dữ liệu riêng; build bình thường đã chứa âm thanh.
 - Đọc tiền 0–999999999999; thanh toán phải >0. Quy ước nghìn/linh/bốn, phân biệt mười/mươi.
 - Nội dung gốc lưu backend; TFT mặc định hiển thị bản chuyển không dấu an toàn (160 ký tự). Font Unicode đầy đủ là nâng cấp, không tuyên bố đã hỗ trợ dấu.

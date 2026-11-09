@@ -1,6 +1,6 @@
 # SmartPay ESP32 — ThueAPI MBBank + VietQR
 
-MVP một tài khoản/một thiết bị: web POS tạo QR, backend đồng bộ lịch sử MBBank, ESP32 hiển thị và đọc số tiền tiếng Việt. **Bộ 21 MP3 đã có trong project và nhúng vào app Flash: upload sketch có luôn audio, không chép filesystem riêng.**
+MVP một tài khoản/một thiết bị: web POS tạo QR, backend đồng bộ lịch sử MBBank, ESP32 hiển thị và đọc số tiền tiếng Việt. **Bộ 22 MP3 đã có trong project và nhúng vào app Flash: upload sketch có luôn audio, không chép filesystem riêng, không gen audio trên ESP32.**
 
 Spec hiện hành: `docs/SPEC-v1.1.md`; kết quả kiểm thử: `docs/VALIDATION.md`. Spec gốc giữ để truy vết và có chú thích superseded.
 
@@ -77,7 +77,7 @@ TFT mặc định chuyển nội dung tiếng Việt thành không dấu để t
 
 ## Audio và test C++
 
-Nghe thử các MP3 trong `firmware/assets/audio/`. Giọng eSpeak NG máy, không phải giọng thu tự nhiên; có thể thay bằng clip có quyền sử dụng và tái nhúng. Các clip 0–10, mươi, trăm, nghìn, triệu, tỷ, đồng, mốt, lăm, linh, đã nhận đã tạo sẵn (38.076 byte).
+Nghe thử các MP3 trong `firmware/assets/audio/`. Giọng Linh vi_VN tạo trên Mac; 22 clip có sẵn (43.780 byte), ghép thành **“Cảm ơn, đã nhận được <số tiền> Việt Nam đồng”**. Ví dụ 10000 đọc “mười nghìn”. ESP32 đọc trực tiếp từ Flash bằng một decoder mỗi câu. Quyền tái phân phối giọng Linh chưa được xác minh; cần làm rõ trước khi phát hành hoặc thay bằng bản thu có quyền sử dụng phù hợp.
 
 ```sh
 python3 /Users/ngttu/Workspace/iot_tingbox/tools/audio/embed.py
@@ -85,7 +85,7 @@ c++ -std=c++17 /Users/ngttu/Workspace/iot_tingbox/firmware/tests/money_test.cpp 
 /tmp/smartpay-money-test
 ```
 
-Chỉ để tái tạo giọng: cài `espeak-ng`, `ffmpeg` rồi chạy `tools/audio/generate.py`. Không cần các công cụ này khi upload file có sẵn. Xem manifest và `firmware/assets/audio/README.md`.
+Chỉ để tái tạo giọng trên máy phát triển: Mac có giọng `Linh` và `ffmpeg`, chạy `/Users/ngttu/Workspace/iot_tingbox/tools/audio/generate.py`. Không cần các công cụ này khi upload firmware với audio có sẵn. Xem manifest và tài liệu audio.
 
 ## Vận hành / giới hạn
 

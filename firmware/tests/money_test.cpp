@@ -12,6 +12,7 @@ int main(){
   assert(words(10)=="muoi");
   assert(words(11)=="muoi mot");
   assert(words(15)=="muoi lam");
+  assert(words(10000)=="muoi nghin");
   assert(words(1000)=="mot nghin");
   assert(words(1001)=="mot nghin khong tram linh mot");
   assert(words(1005)=="mot nghin khong tram linh nam");
@@ -31,5 +32,17 @@ int main(){
   assert(!words(999999999999ULL).empty());
   assert(words(1000000000000ULL).empty());
   for(uint64_t i=0;i<100000;i++) assert(!numberToVietnameseClips(i).empty());
-  std::cout<<"22 money cases and 100000 range cases passed\n";
+  assert((buildPaymentAnnouncementClips(10000)==std::vector<std::string>{
+    "cam_on","da_nhan_duoc","muoi","nghin","viet_nam_dong"}));
+  for(uint64_t n:{0ULL,15ULL,1001ULL,150000ULL,21000ULL,999999999999ULL}){
+    auto clips=buildPaymentAnnouncementClips(n);
+    auto number=numberToVietnameseClips(n);
+    assert(clips.size()==number.size()+3);
+    assert(clips[0]=="cam_on" && clips[1]=="da_nhan_duoc");
+    assert(clips.back()=="viet_nam_dong");
+    assert(std::vector<std::string>(clips.begin()+2,clips.end()-1)==number);
+  }
+  assert(buildPaymentAnnouncementClips(1000000000000ULL).empty());
+  assert(buildPaymentAnnouncementClips(UINT64_MAX).empty());
+  std::cout<<"Money and payment announcement cases + 100000 range cases passed\n";
 }

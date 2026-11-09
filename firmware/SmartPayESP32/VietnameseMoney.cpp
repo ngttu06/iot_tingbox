@@ -26,3 +26,11 @@ std::vector<std::string> numberToVietnameseClips(uint64_t amount) {
   }
   return out;
 }
+
+std::vector<std::string> buildPaymentAnnouncementClips(uint64_t amount) {
+  auto clips=numberToVietnameseClips(amount);
+  if(clips.empty())return clips;
+  clips.insert(clips.begin(),{"cam_on","da_nhan_duoc"});
+  clips.emplace_back("viet_nam_dong");
+  return clips;
+}

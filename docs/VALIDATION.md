@@ -1,5 +1,16 @@
 # Kết quả kiểm thử — 09/11/2026
 
+## Thiết kế lại audio ghép số tiền
+
+- Giọng Linh vi_VN tạo trên Mac: 22 MP3, tổng 43.780 byte; nhúng PROGMEM trong app Flash. ESP32 không tạo giọng đọc, không gọi TTS mạng.
+- Câu 10000: `cam_on da_nhan_duoc muoi nghin viet_nam_dong`.
+- Money/announcement tests và 100.000 số liên tiếp PASS.
+- Host test nguồn clip: đọc xuyên ranh giới với block 1/7/1024/4096 byte, seek, EOF, nguồn lỗi, đối chiếu dữ liệu nhúng của 5 số tiền PASS. Stub chỉ dùng trên host; build firmware kiểm tra giao diện thư viện thật.
+- SHA-256, 22 MP3 decode, MPEG frame headers, bit reservoir, ba luồng nối tiếp (10000, 150000, toàn bộ clip) PASS; embed tái lập cùng hash.
+- ESP32 build PASS: app 1.319.866 byte (41%), global RAM 48.916 byte (14%); core/libraries theo cấu hình hiện tại. Host test nguồn clip với AddressSanitizer/UndefinedBehaviorSanitizer PASS.
+- Chưa nạp board hoặc nghe loa: không thấy cổng USB ESP32. Không suy ra độ tự nhiên hoặc bảo đảm không click từ kiểm thử phần mềm. Preview 10000 tại `/tmp/tingbox_10000.mp3` (file tạm).
+- Quyền phân phối giọng hệ thống Linh chưa được xác minh. Số liệu eSpeak bên dưới là baseline lịch sử, đã được thay thế.
+
 ## Bổ sung Wi-Fi setup portal
 
 - Firmware sau thêm SoftAP/DNSServer/WebServer: compile PASS, script build exit 0; app 1.313.034 byte (41%), global RAM 48.932 byte (14%).
