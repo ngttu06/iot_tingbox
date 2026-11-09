@@ -1,6 +1,12 @@
 # Bộ giọng đọc nhúng sẵn
 
-22 file MP3 tạo trên Mac bằng `say`, giọng nữ Linh (`vi_VN`), tốc độ 185; FFmpeg chuẩn hóa mono 22050 Hz/32 kbps. Tổng 43.780 byte. Cần nghe thử trên loa thật để đánh giá phát âm và nhịp nghỉ.
+24 file MP3 tạo trên Mac bằng `say`, giọng nữ Linh (`vi_VN`), tốc độ 185; FFmpeg chuẩn hóa mono 22050 Hz/32 kbps. Kích thước và hash từng clip nằm trong manifest. Cần nghe thử trên loa thật để đánh giá phát âm và nhịp nghỉ.
+
+Hai câu khởi động:
+- `chao_mung`: **Chào mừng bạn đến với TingBox.** — phát khi bật nguồn.
+- `ket_noi_wifi`: **Đã kết nối Wi-Fi thành công.** — phát khi kết nối Wi-Fi lần đầu, không phụ thuộc backend.
+
+Mỗi câu phát một lần mỗi lần khởi động, không chồng tiếng hoặc ngắt câu thanh toán. Chế độ hardware smoke test chỉ phát số tiền mẫu như trước.
 
 Câu đọc: **Cảm ơn, đã nhận được <số tiền> Việt Nam đồng**.
 Ví dụ 10000: `cam_on` + `da_nhan_duoc` + `muoi` + `nghin` + `viet_nam_dong`.

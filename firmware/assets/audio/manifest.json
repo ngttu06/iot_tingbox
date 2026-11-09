@@ -7,6 +7,20 @@
   "format": "MP3 mono 22050 Hz 32 kbps",
   "clips": [
     {
+      "id": "chao_mung",
+      "text": "Chào mừng bạn đến với TingBox.",
+      "file": "chao_mung.mp3",
+      "bytes": 7523,
+      "sha256": "190a41ca082f829b5a2dbcf0f592bfd546ebedc0806094120b4b45863dbde4fb"
+    },
+    {
+      "id": "ket_noi_wifi",
+      "text": "Đã kết nối Wi-Fi thành công.",
+      "file": "ket_noi_wifi.mp3",
+      "bytes": 8359,
+      "sha256": "2a7381574718bfe78eb461de6c34417056204e7bd0babe09d56d54c661ca4d62"
+    },
+    {
       "id": "cam_on",
       "text": "Cảm ơn",
       "file": "cam_on.mp3",

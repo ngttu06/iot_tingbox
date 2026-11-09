@@ -4,9 +4,15 @@
 
 void AudioManager::begin(){output.SetPinout(26,25,22);output.SetGain(0.45);}
 bool AudioManager::playAmount(uint64_t amount){
+  return playSequence(buildPaymentAnnouncementClips(amount));
+}
+bool AudioManager::playClip(const char* id){
+  if(!id)return false;
+  return playSequence({id});
+}
+bool AudioManager::playSequence(const std::vector<std::string>& sequence){
   if(playing)return false;
   completed=false;
-  const auto sequence=buildPaymentAnnouncementClips(amount);
   if(sequence.empty())return false;
   std::vector<const AudioClip*> clips;
   for(const auto& id:sequence){

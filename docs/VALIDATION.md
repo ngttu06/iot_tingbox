@@ -1,5 +1,15 @@
 # Kết quả kiểm thử — 09/11/2026
 
+## Âm chào mừng TingBox và kết nối Wi-Fi
+
+- Thêm `chao_mung` (“Chào mừng bạn đến với TingBox.”) và `ket_noi_wifi` (“Đã kết nối Wi-Fi thành công.”), giọng Linh cùng định dạng audio hiện tại. Tổng 24 clip, 59.662 byte; 22 clip thanh toán cũ không thay đổi.
+- Host test thứ tự chào trước/Wi-Fi sau, bật nguồn chưa có Wi-Fi, Wi-Fi đến sớm, chờ audio/thanh toán đang phát, không lặp sau 100 thông báo kết nối và reset khi khởi động lại: PASS với AddressSanitizer/UndefinedBehaviorSanitizer.
+- Host test nguồn clip với sanitizer, money/announcement test gồm 100.000 số liên tiếp và 12 Wi-Fi validation/escaping cases: PASS.
+- Kiểm tra SHA-256, định dạng MPEG/bit reservoir, decode 24 MP3 và các luồng ghép (gồm hai câu khởi động): PASS. Sinh lại mã nhúng cho cùng hash; Python compile và git diff whitespace check: PASS.
+- Tín hiệu kết nối được gửi qua queue riêng ngay khi network task thấy Wi-Fi kết nối thành công, không chờ kết quả backend và không bị ghi đè bởi queue cập nhật màn hình. Chỉ audio loop sử dụng decoder.
+- ESP32 compile/link và tạo binary: PASS; app 1.336.482 byte (42%), global RAM 48.924 byte (14%). Binary local nằm tại `/Users/ngttu/Workspace/iot_tingbox/firmware/build/SmartPayESP32.ino.bin`; chứa cấu hình local, không chia sẻ công khai.
+- Chưa nạp board/nghe thử: chỉ thấy cổng Bluetooth, chưa thấy USB ESP32. Cần thử trên thiết bị: bật offline rồi cấu hình Wi-Fi, Wi-Fi kết nối nhanh, backend không hoạt động, giao dịch đến khi đang chào, mất/kết nối lại Wi-Fi và tắt/bật nguồn.
+
 ## Thiết kế lại audio ghép số tiền
 
 - Giọng Linh vi_VN tạo trên Mac: 22 MP3, tổng 43.780 byte; nhúng PROGMEM trong app Flash. ESP32 không tạo giọng đọc, không gọi TTS mạng.

@@ -1,6 +1,6 @@
 # SmartPay ESP32 — ThueAPI MBBank + VietQR
 
-MVP một tài khoản/một thiết bị: web POS tạo QR, backend đồng bộ lịch sử MBBank, ESP32 hiển thị và đọc số tiền tiếng Việt. **Bộ 22 MP3 đã có trong project và nhúng vào app Flash: upload sketch có luôn audio, không chép filesystem riêng, không gen audio trên ESP32.**
+MVP một tài khoản/một thiết bị: web POS tạo QR, backend đồng bộ lịch sử MBBank, ESP32 hiển thị và đọc số tiền tiếng Việt. **Bộ 24 MP3 đã có trong project và nhúng vào app Flash: upload sketch có luôn audio, không chép filesystem riêng, không gen audio trên ESP32.**
 
 Spec hiện hành: `docs/SPEC-v1.1.md`; kết quả kiểm thử: `docs/VALIDATION.md`. Spec gốc giữ để truy vết và có chú thích superseded.
 
@@ -77,12 +77,19 @@ TFT mặc định chuyển nội dung tiếng Việt thành không dấu để t
 
 ## Audio và test C++
 
-Nghe thử các MP3 trong `firmware/assets/audio/`. Giọng Linh vi_VN tạo trên Mac; 22 clip có sẵn (43.780 byte), ghép thành **“Cảm ơn, đã nhận được <số tiền> Việt Nam đồng”**. Ví dụ 10000 đọc “mười nghìn”. ESP32 đọc trực tiếp từ Flash bằng một decoder mỗi câu. Quyền tái phân phối giọng Linh chưa được xác minh; cần làm rõ trước khi phát hành hoặc thay bằng bản thu có quyền sử dụng phù hợp.
+Nghe thử các MP3 trong `/Users/ngttu/Workspace/iot_tingbox/firmware/assets/audio/`. Giọng Linh vi_VN tạo trên Mac; 24 clip có sẵn, gồm bộ ghép câu **“Cảm ơn, đã nhận được <số tiền> Việt Nam đồng”** và hai câu khởi động. Ví dụ 10000 đọc “mười nghìn”. ESP32 đọc trực tiếp từ Flash bằng một decoder mỗi câu. Quyền tái phân phối giọng Linh chưa được xác minh; cần làm rõ trước khi phát hành hoặc thay bằng bản thu có quyền sử dụng phù hợp.
+
+- Bật nguồn: **“Chào mừng bạn đến với TingBox.”**
+- Kết nối Wi-Fi thành công lần đầu: **“Đã kết nối Wi-Fi thành công.”**, không chờ backend/Internet hoạt động.
+- Mỗi câu phát một lần mỗi lần khởi động; Wi-Fi kết nối lại không phát lặp. Câu Wi-Fi đợi câu chào hoặc thông báo thanh toán đang phát kết thúc. Giao dịch đến trong lúc phát âm khởi động được giữ trong hàng đợi, chỉ ACK sau khi đọc số tiền xong như trước.
+- Chế độ `HARDWARE_SMOKE_TEST=1` giữ nguyên: chỉ đọc số tiền mẫu, không phát hai câu khởi động.
 
 ```sh
 python3 /Users/ngttu/Workspace/iot_tingbox/tools/audio/embed.py
 c++ -std=c++17 /Users/ngttu/Workspace/iot_tingbox/firmware/tests/money_test.cpp /Users/ngttu/Workspace/iot_tingbox/firmware/SmartPayESP32/VietnameseMoney.cpp -o /tmp/smartpay-money-test
 /tmp/smartpay-money-test
+c++ -std=c++17 -I/Users/ngttu/Workspace/iot_tingbox/firmware/tests/stubs /Users/ngttu/Workspace/iot_tingbox/firmware/tests/startup_sounds_test.cpp /Users/ngttu/Workspace/iot_tingbox/firmware/SmartPayESP32/AudioAssets.cpp -o /tmp/tingbox-startup-test
+/tmp/tingbox-startup-test
 ```
 
 Chỉ để tái tạo giọng trên máy phát triển: Mac có giọng `Linh` và `ffmpeg`, chạy `/Users/ngttu/Workspace/iot_tingbox/tools/audio/generate.py`. Không cần các công cụ này khi upload firmware với audio có sẵn. Xem manifest và tài liệu audio.

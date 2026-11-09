@@ -9,6 +9,8 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'firmware/assets/audio'
 WORDS = {
+    'chao_mung': 'Chào mừng bạn đến với TingBox.',
+    'ket_noi_wifi': 'Đã kết nối Wi-Fi thành công.',
     'cam_on': 'Cảm ơn', 'da_nhan_duoc': 'đã nhận được',
     'khong': 'không', 'mot': 'một', 'hai': 'hai',
     'ba': 'ba', 'bon': 'bốn', 'nam': 'năm', 'sau': 'sáu', 'bay': 'bảy',

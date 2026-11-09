@@ -8,6 +8,7 @@
 #include "ApiClient.h"
 #include "PaymentState.h"
 #include "WifiProvisioner.h"
+#include "StartupSounds.h"
 #if __has_include("config.h")
 #include "config.h"
 #else
@@ -16,7 +17,8 @@
 
 AudioManager audio;
 DisplayManager display;
-QueueHandle_t eventQueue,updateQueue,playedQueue;
+QueueHandle_t eventQueue,updateQueue,playedQueue,wifiConnectedQueue;
+StartupSounds startupSounds;
 PaymentState state=PaymentState::BOOT;
 PaymentEvent active{};
 bool activeEvent=false,wasPlaying=false,online=false;
@@ -29,9 +31,17 @@ void networkTask(void*){
   uint64_t played=prefs.getULong64("last_played",0),awaiting=played,inflight=0;
   ApiClient api;unsigned retry=3000;
   WifiProvisioner wifi;wifi.begin(WIFI_SSID,WIFI_PASSWORD);
+  bool wifiNotified=false;
+  auto serviceWifi=[&](){
+    wifi.loop();
+    if(!wifiNotified && WiFi.status()==WL_CONNECTED && !wifi.connecting()){
+      const bool connected=true;
+      wifiNotified=xQueueSend(wifiConnectedQueue,&connected,0)==pdTRUE;
+    }
+  };
   configTime(0,0,"pool.ntp.org","time.google.com");
   for(;;){
-    wifi.loop();
+    serviceWifi();
     uint64_t completed;
     while(xQueueReceive(playedQueue,&completed,0)==pdTRUE){
       // Commit only after playback; failed writes must not silently advance the cursor.
@@ -69,7 +79,7 @@ void networkTask(void*){
     retry=u.online?3000:min(retry*2,60000U);
     // Wake frequently to commit finished playback promptly, independent of poll backoff.
     for(unsigned waited=0;waited<retry;waited+=100){
-      wifi.loop();
+      serviceWifi();
       if(uxQueueMessagesWaiting(playedQueue))break;
       vTaskDelay(pdMS_TO_TICKS(100));
     }
@@ -83,7 +93,8 @@ void setup(){
   }
   display.message("SMARTPAY","Dang ket noi Wi-Fi / backend...");state=PaymentState::WIFI_CONNECTING;
   eventQueue=xQueueCreate(1,sizeof(PaymentEvent));updateQueue=xQueueCreate(1,sizeof(NetworkUpdate));playedQueue=xQueueCreate(1,sizeof(uint64_t));
-  if(!eventQueue||!updateQueue||!playedQueue||xTaskCreatePinnedToCore(networkTask,"network",16384,nullptr,1,nullptr,0)!=pdPASS){
+  wifiConnectedQueue=xQueueCreate(1,sizeof(bool));
+  if(!eventQueue||!updateQueue||!playedQueue||!wifiConnectedQueue||xTaskCreatePinnedToCore(networkTask,"network",16384,nullptr,1,nullptr,0)!=pdPASS){
     display.message("ERROR","Khong tao duoc network task");state=PaymentState::ERROR;
   }
 }
@@ -105,7 +116,13 @@ void loop(){
       else if(state!=PaymentState::READY && millis()-receivedAt>6000){display.message("SAN SANG","MBBank - Tao don tren web POS");state=PaymentState::READY;shownOrder="";shownPortal="";}
     }
   }
-  if(!activeEvent && xQueueReceive(eventQueue,&active,0)==pdTRUE){
+  bool wifiConnected;
+  if(xQueueReceive(wifiConnectedQueue,&wifiConnected,0)==pdTRUE && wifiConnected)startupSounds.wifiConnected();
+  if(const char* clip=startupSounds.nextClip(audio.busy(),activeEvent)){
+    if(!audio.playClip(clip))Serial.printf("Startup audio failed: %s\n",clip);
+  }
+  // Leave payment queued until the current greeting/notification has finished.
+  if(!activeEvent && !audio.busy() && xQueueReceive(eventQueue,&active,0)==pdTRUE){
     shownPortal="";
     activeEvent=true;display.credit(active.paid,active.amount,active.content,active.bank,active.at);
     if(!audio.playAmount(active.amount)){display.message("AUDIO ERROR","Khong ACK; khoi dong lai de thu lai");state=PaymentState::ERROR;return;}

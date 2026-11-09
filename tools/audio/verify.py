@@ -38,6 +38,7 @@ for c in manifest['clips']:
 print(f'PASS: {len(manifest["clips"])} MP3 clips, mono 22050 Hz, {total} bytes; hashes and embedded table valid')
 with tempfile.TemporaryDirectory() as temp:
     for name, ids in {
+        'startup': ['chao_mung','ket_noi_wifi'],
         '10000': ['cam_on','da_nhan_duoc','muoi','nghin','viet_nam_dong'],
         '150000': ['cam_on','da_nhan_duoc','mot','tram','nam','muoi_hang_chuc','nghin','viet_nam_dong'],
         'all_clips': list(WORDS),
